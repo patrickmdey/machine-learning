@@ -1,7 +1,5 @@
 import pandas as pd
-# from TP0.utils import replace_missing_values
-# import utils
-from utils import *#replace_missing_values, boxplot_column, cov_analysis, categorize_calories_col, scatter_category, bar_column, kurtosis_column, skewness_column, boxplot_grouped_column
+from utils import *
 
 def main():
     df = pd.read_csv("./Datos1.csv", usecols=['Grasas_sat','Alcohol','Calorías','Sexo'])
