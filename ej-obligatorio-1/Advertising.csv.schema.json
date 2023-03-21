@@ -1,0 +1,32 @@
+{
+  "fields": [
+    {
+      "name": "",
+      "type": "integer",
+      "format": "default"
+    },
+    {
+      "name": "TV",
+      "type": "number",
+      "format": "default"
+    },
+    {
+      "name": "Radio",
+      "type": "number",
+      "format": "default"
+    },
+    {
+      "name": "Newspaper",
+      "type": "number",
+      "format": "default"
+    },
+    {
+      "name": "Sales",
+      "type": "number",
+      "format": "default"
+    }
+  ],
+  "missingValues": [
+    ""
+  ]
+}

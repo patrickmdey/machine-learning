@@ -9,8 +9,8 @@ from sklearn.metrics import mean_squared_error
 def corr_analysis(df):
     corr = df.corr()
     heatmap = sns.heatmap(corr)
+    heatmap.set_title('Correlation Heatmap', fontdict={'fontsize':12}, pad=12)
     heatmap.figure.savefig("./out/corr_heatmap.png")
-    # print(df.corr())
 
 def linear_model(X, y, multiple=False, x_label="null", y_label="null"):
     plt.clf()
@@ -19,6 +19,7 @@ def linear_model(X, y, multiple=False, x_label="null", y_label="null"):
     print("Bi for " + ("multiple" if multiple else "linear "  + x_label) + ": " + str(reg.coef_) + '\n') # coeficiente de la recta (b_i)
     if not multiple:
         plt.scatter(X, y)
+        plt.title(x_label + " vs " + y_label + " simple linear regression")
         plt.xlabel(x_label)
         plt.ylabel(y_label)
         plt.plot(X, reg.predict(X), color='red', linewidth=2)

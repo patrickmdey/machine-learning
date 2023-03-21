@@ -1,0 +1,58 @@
+{
+  "columns": [
+    {
+      "minWidth": 40,
+      "download": false,
+      "formatter": "rowSelection",
+      "titleFormatter": "rowSelection",
+      "resizable": true,
+      "headerSort": false,
+      "width": 53
+    },
+    {
+      "field": "",
+      "title": "",
+      "minWidth": 40,
+      "resizable": true,
+      "sorter": "number",
+      "headerSort": true,
+      "width": 62
+    },
+    {
+      "field": "TV",
+      "title": "TV",
+      "minWidth": 40,
+      "resizable": true,
+      "sorter": "number",
+      "headerSort": true,
+      "width": 76
+    },
+    {
+      "field": "Radio",
+      "title": "Radio",
+      "minWidth": 40,
+      "resizable": true,
+      "sorter": "number",
+      "headerSort": true,
+      "width": 94
+    },
+    {
+      "field": "Newspaper",
+      "title": "Newspaper",
+      "minWidth": 40,
+      "resizable": true,
+      "sorter": "number",
+      "headerSort": true,
+      "width": 131
+    },
+    {
+      "field": "Sales",
+      "title": "Sales",
+      "minWidth": 40,
+      "resizable": true,
+      "sorter": "number",
+      "headerSort": true,
+      "width": 793
+    }
+  ]
+}

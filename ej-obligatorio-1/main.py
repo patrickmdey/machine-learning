@@ -18,7 +18,7 @@ def main():
     print("Running simple linear regression test...")
     simple_test(df)
 
-    print("Running multiple linear regression test...")
+    print("\nRunning multiple linear regression test...")
     multiple_test(df)
 
 
