@@ -1,8 +1,8 @@
 import pandas as pd
 def main ():
     df = pd.read_csv("Noticias_argentinas.csv", 
-                     usecols=["fecha","titular","fuente","categoria","Internacional"], 
-                     dtype={"fecha": "str", "titular": "str", "fuente": "str", "categoria": "str", "Internacional": "str"})
+                     usecols=["fecha","titular","fuente","categoria"], 
+                     dtype={"fecha": "str", "titular": "str", "fuente": "str", "categoria": "str"})
 
     title_list = df["titular"].tolist()
     counters = {}

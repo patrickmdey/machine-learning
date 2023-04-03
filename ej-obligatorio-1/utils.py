@@ -47,3 +47,10 @@ def test_multple_linear_model(df, test_percentage=0.2):
     reg = LinearRegression().fit(X_train, y_train) # te calcula la recta de regresion
     y_pred = reg.predict(X_test)
     print("MSE for multiple linear model: " + str(mean_squared_error(y_test, y_pred)))
+
+
+#create a method that will take in a dataframe and a list of columns to be used as features and return a list of the feature columns and the target column
+def get_features_and_target(df, features, target):
+    X = df[features]
+    y = df[target]
+    return X, y
