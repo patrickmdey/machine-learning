@@ -1,0 +1,16 @@
+
+Pronostico,Temperatura,Humedad,viento,juega
+soleado,calido,alta,debil,no
+soleado,calido,alta ,fuerte,no
+nublado,calido,alta,debil,si
+lluvioso,templado,alta,debil,si
+lluvioso,frio,normal,debil,si
+lluvioso,frio,normal,fuerte,no
+nublado,frio,normal,fuerte,si
+soleado,templado,alta,debil,no
+soleado,frio,normal,debil,si
+lluvioso,templado,normal,debil,si
+soleado,templado,normal,fuerte,si
+nublado,templado,alta,fuerte,si
+nublado,calido,normal,debil,si
+lluvioso,templado,alta,fuerte,no
