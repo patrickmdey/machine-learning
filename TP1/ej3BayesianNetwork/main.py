@@ -70,7 +70,7 @@ def main():
                     init_len = len(df[(df["rank"] == rank) & (df["gpa"] == gpa) & (df["gre"] == gre)])
                     conditional_len = len(df[(df['admit'] == admit) & (df["rank"] == rank) &
                                      (df["gpa"] == gpa) & (df["gre"] == gre)])
-                    # TODO: capaz no hacerlo siempre
+                    # TODO: only apply Laplace when there is a zero case
                     prob =  (conditional_len + 1) / (init_len + 2)
                     admit_probs[a_idx][gpa_idx][gre_idx].append(prob)
     
