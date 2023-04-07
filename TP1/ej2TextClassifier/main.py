@@ -1,7 +1,11 @@
+from matplotlib import pyplot as plt
 import pandas as pd
 import unidecode
 from probability_helper import *
 from sklearn.model_selection import train_test_split
+import seaborn as sns
+import numpy as np
+from graphs import get_graphs
 
 
 def remove_stop_words_from(list, has_to_replace, print_most_used_words, use_unidecode):
@@ -59,7 +63,7 @@ def get_freq_table(df):
     
     return freq_table
 
-def get_most_probable_class(df, instance, class_probability, class_qty, freq_table):
+def get_conditional_probs(instance, class_probability, class_qty, freq_table):
     probabilities = {}
     
     for name, class_first_prob in class_probability.items():
@@ -74,8 +78,31 @@ def get_most_probable_class(df, instance, class_probability, class_qty, freq_tab
 
         probabilities[name] = curr_prob
     
-    return max(probabilities, key=probabilities.get)
+    total = sum(probabilities.values())
+    for key in probabilities:
+        probabilities[key] /= total
+
+
+    return probabilities
         
+def partition_dataset(df, partition_percentage):
+    # shuffle dataframe rows
+    df = df.sample(frac=1).reset_index(drop=True)
+
+    partition_size = int(np.floor(len(df) * partition_percentage))
+    partitions = []
+    
+    # TODO: pass to function
+    bottom = 0
+    up = partition_size
+    while bottom < len(df):
+        partitions.append(df[bottom:up].copy())
+        bottom += partition_size
+        up += partition_size
+        if up > len(df):
+            up = partition_size
+    return partitions
+
 
 def main():
     print_most_used_word = False
@@ -87,36 +114,69 @@ def main():
     
     df["titular"] = remove_stop_words_from(df["titular"].tolist(), has_to_replace, print_most_used_word, use_unidecode)
     df = df.loc[(df["categoria"] != "Noticias destacadas")]
-    
-    
 
-    #shuffle dataframe rows
-    # df = df.sample(frac=1).reset_index(drop=True)
-    train, test = train_test_split(df, test_size=0.2)
+    partitions = partition_dataset(df, 0.2)
 
-    train.reset_index(drop=True, inplace=True)
-    test.reset_index(drop=True, inplace=True)
+    categories = df["categoria"].unique()
 
-    freq_table = get_freq_table(train)
+    result_confusion_matrix = pd.DataFrame({real_cat: {pred_cat: 0 for pred_cat in categories} for real_cat in categories})
 
-    # TODO: apply Laplace if category is not present ?
-    class_probability = get_class_probability(train, 'categoria')
-
-    class_qty = len(class_probability)
+    step = 1 / len(partitions)
+    threshold = step
 
 
-    total = 0
-    positive = 0
-    for idx, instance in test.iterrows():
-        total += 1
-        # TODO: take into account the frequency of the words that appears in instance
-        most_prob = get_most_probable_class(train, instance, class_probability, class_qty, freq_table)
-        # print(most_prob + " -> " + instance["categoria"])
-        if most_prob == instance["categoria"]:
-            positive +=1
+    metrics_per_class = {real_cat: {"tp": 0, "tn":0, "fp": 0, "fn": 0} for real_cat in categories}
+
+    for partition in partitions:
+        test = partition
+        train = pd.concat([df for df in partitions if df is not partition]) # TODO: check and verify if a copy is needed
         
-    print("Precision: ", positive/total)    
+        train.reset_index(drop=True, inplace=True)
+        test.reset_index(drop=True, inplace=True)
+
+        freq_table = get_freq_table(train)
+
+        # TODO: apply Laplace if category is not present ?
+        class_probability = get_class_probability(train, 'categoria')
+
+        class_qty = len(class_probability)
+
+        confusion_matrix = {real_cat: {pred_cat: 0 for pred_cat in categories} for real_cat in categories}
+
+        total = 0    
+        true_positive = 0
+
+        for idx, instance in test.iterrows():
+            total += 1
+            probabilites = get_conditional_probs(instance, class_probability, class_qty, freq_table)
+            predicted_cat = max(probabilites, key=probabilites.get)
+
+            real_cat = instance["categoria"]
+
+            if predicted_cat == real_cat: 
+                metrics_per_class[predicted_cat]["tp"] += 1 #it really is a hit
+                other_cats = [cat for cat in categories if cat != predicted_cat]
+                for cat in other_cats:
+                    metrics_per_class[cat]["tn"] += 1 #for all the other cat wont be a hit for sure
+            else:
+                metrics_per_class[predicted_cat]["fp"] += 1 #for the other cat shouldn't be a hit but it is
+                metrics_per_class[real_cat]["fn"] += 1 #for the cat its a hit but it shouldn't be
+
+            confusion_matrix[test["categoria"][idx]][predicted_cat] += 1
+                
+
+        for cat in categories:
+            true_positive += confusion_matrix[cat][cat]
         
+        print("Precision: ", true_positive / total)  
+
+        result_confusion_matrix += pd.DataFrame(confusion_matrix)
+
+        threshold += step
+    pd.DataFrame(metrics_per_class).to_csv("post_processing/metrics_per_class_.csv")
+
+    result_confusion_matrix.to_csv("post_processing/confusion_matrix.csv")
+    # get_graphs()     
         
 if __name__ == "__main__":
     main()
