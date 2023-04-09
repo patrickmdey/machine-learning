@@ -8,3 +8,4 @@ out
 *.vscode
 *.png
 post_processing/
+classification.csv
