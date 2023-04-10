@@ -8,8 +8,7 @@ def remove_stop_words_from(list,use_unidecode):
     # FIXME: regex
     symbols = [".", ",","¡", "!", "¿", "?", "(", ")", ":", ";", "-", "\"", "\'", "%", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0"]
     stop_words = symbols + ["de","la","el","en","y","que","los","un","del","una", "a", "de", "la", "en", "el", "y"]
-
-
+    
     for idx, title in enumerate(list):
         title_words = title.split(" ")
         mod_words = []
@@ -22,18 +21,8 @@ def remove_stop_words_from(list,use_unidecode):
                 mod_word = "".join(w for w in word if w not in symbols)
                 mod_words.append(mod_word)
             
-            if mod_word in counters:
-                counters[mod_word] += 1
-            else:
-                counters[mod_word] = 1
-            
         list[idx] = " ".join(mod_words)
         title_words = list[idx].split(" ")
-
-    print("Las 10 palabras mas usadas son:")
-    sorted_counters = sorted(counters.items(), key=lambda x: x[1], reverse=True)[:10]
-    output_string = "\n".join([f"{item[0]}: {item[1]}" for item in sorted_counters])
-    print(output_string)
 
     return list
 
@@ -79,6 +68,7 @@ def get_conditional_probs(instance, class_probability, class_qty, freq_table, ca
 
     return probabilities
         
+# TODO: fix
 def partition_dataset(df, partition_percentage):
     # shuffle dataframe rows
     df = df.sample(frac=1).reset_index(drop=True)
@@ -105,11 +95,10 @@ def main():
     df["titular"] = remove_stop_words_from(df["titular"].tolist(), use_unidecode)
     df = df.loc[(df["categoria"] != "Noticias destacadas") & (df["categoria"] != "Destacadas")]
 
-    partitions = partition_dataset(df, 0.2)
+    partitions = partition_dataset(df, 0.4) # TODO: capaz recibirlo de config
+    partitions = partitions[:-1] #FIXME: 
 
     categories = sorted(df["categoria"].unique())
-
-    result_confusion_matrix = pd.DataFrame({real_cat: {pred_cat: 0 for pred_cat in sorted(categories)} for real_cat in categories})
 
     step = 1 / len(partitions)
     threshold = step
@@ -130,18 +119,10 @@ def main():
             class_probability = get_class_probability(train, 'categoria')
 
             class_qty = len(class_probability)
-            #TODO: Aca otro for que recorre todo el umbral sería ?
-            # roc_file.write(f"threshold: {threshold}\n", threshold)
-
-            #confusion_matrix = {real_cat: {pred_cat: 0 for pred_cat in categories} for real_cat in categories}
-
-            #total = 0    
-            #true_positive = 0
 
             classifier_file.write("prediction," + ",".join(cat for cat in categories)+ ",real\n")
 
             for idx, instance in test.iterrows():
-                #total += 1
                 probabilites = get_conditional_probs(instance, class_probability, class_qty, freq_table, categories)
                 predicted_cat = max(probabilites, key=probabilites.get)
                 real_cat = instance["categoria"]
@@ -150,17 +131,10 @@ def main():
                 classifier_file.write(predicted_cat + "," + ",".join(str(prob) for prob in probabilites.values())+ 
                                       "," + real_cat + "\n")
                     
-            #for cat in categories:
-            #    true_positive += confusion_matrix[cat][cat]
-            
-            # print("Precision: ", true_positive / total)  
-
-            #result_confusion_matrix += pd.DataFrame(confusion_matrix)
 
             threshold += step
     pd.DataFrame(metrics_per_class).to_csv("post_processing/metrics_per_class_.csv")
 
-    #result_confusion_matrix.to_csv("post_processing/confusion_matrix.csv")
         
 if __name__ == "__main__":
     main()
