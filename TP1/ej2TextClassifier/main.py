@@ -9,6 +9,7 @@ def remove_stop_words_from(list,use_unidecode):
     symbols = [".", ",","¡", "!", "¿", "?", "(", ")", ":", ";", "-", "\"", "\'", "%", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0"]
     stop_words = symbols + ["de","la","el","en","y","que","los","un","del","una", "a", "de", "la", "en", "el", "y"]
 
+
     for idx, title in enumerate(list):
         title_words = title.split(" ")
         mod_words = []
@@ -20,8 +21,19 @@ def remove_stop_words_from(list,use_unidecode):
             if word not in stop_words:
                 mod_word = "".join(w for w in word if w not in symbols)
                 mod_words.append(mod_word)
+            
+            if mod_word in counters:
+                counters[mod_word] += 1
+            else:
+                counters[mod_word] = 1
+            
         list[idx] = " ".join(mod_words)
         title_words = list[idx].split(" ")
+
+    print("Las 10 palabras mas usadas son:")
+    sorted_counters = sorted(counters.items(), key=lambda x: x[1], reverse=True)[:10]
+    output_string = "\n".join([f"{item[0]}: {item[1]}" for item in sorted_counters])
+    print(output_string)
 
     return list
 
@@ -91,7 +103,7 @@ def main():
     df = pd.read_csv("Noticias_argentinas.csv", usecols=["fecha","titular","fuente","categoria"])
     
     df["titular"] = remove_stop_words_from(df["titular"].tolist(), use_unidecode)
-    df = df.loc[(df["categoria"] != "Noticias destacadas")]
+    df = df.loc[(df["categoria"] != "Noticias destacadas") & (df["categoria"] != "Destacadas")]
 
     partitions = partition_dataset(df, 0.2)
 
@@ -101,8 +113,6 @@ def main():
 
     step = 1 / len(partitions)
     threshold = step
-
-    # with open("out/roc.txt", "w") as roc_file:
 
     metrics_per_class = {real_cat: {"tp": 0, "tn":0, "fp": 0, "fn": 0} for real_cat in categories} #TODO: esto debería ir en el for ?
 
@@ -139,21 +149,6 @@ def main():
                 # TODO: check order
                 classifier_file.write(predicted_cat + "," + ",".join(str(prob) for prob in probabilites.values())+ 
                                       "," + real_cat + "\n")
-            
-                # pred   cat1 cat2 cat3 real
-                # ca1    0.1   0.5  0.4 cat2
-
-
-                # if predicted_cat == real_cat: 
-                #     metrics_per_class[predicted_cat]["tp"] += 1 #it really is a hit
-                #     other_cats = [cat for cat in categories if cat != predicted_cat]
-                #     for cat in other_cats:
-                #         metrics_per_class[cat]["tn"] += 1 #for all the other cat, it wont be a hit for sure
-                # else:
-                #     metrics_per_class[predicted_cat]["fp"] += 1 #for the other cat shouldn't be a hit but it is
-                #     metrics_per_class[real_cat]["fn"] += 1 #for the cat its a hit but it shouldn't be
-
-                # confusion_matrix[test["categoria"][idx]][predicted_cat] += 1
                     
             #for cat in categories:
             #    true_positive += confusion_matrix[cat][cat]
