@@ -5,8 +5,6 @@ from probability_helper import *
 import numpy as np
 
 def main():
-    # json.read("config.json")
-    
     with open(sys.argv[1], 'r') as config_file:
         config = json.load(config_file)
         category = "Nacionalidad"
@@ -45,7 +43,7 @@ def main():
         # Obtenemos P(ai/vj). 
         class_qty = len(value_conditional_probability)
         for key in class_probability:
-            for (idx, col) in enumerate(df.loc[:, df.columns != category]):
+            for (idx, col) in enumerate(df.loc[:, df.columns != category]): #all columns except class_column
                 value_conditional_probability[key].append(get_value_conditional_prob(df, col, new_instance[idx], key, category, class_qty))
         
         # TODO: preguntar si hay que hacer Laplace siempre o no
@@ -57,6 +55,5 @@ def main():
             results[key] = class_probability[key] * np.prod(value_conditional_probability[key])
 
         print("vj/ai = " + str(results))
-
 if __name__ == "__main__":
     main()

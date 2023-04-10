@@ -12,7 +12,6 @@ def remove_stop_words_from(list,use_unidecode):
     for idx, title in enumerate(list):
         title_words = title.split(" ")
         mod_words = []
-
         for word in title_words:
             if use_unidecode:
                 word = unidecode.unidecode(word.lower())
@@ -103,7 +102,7 @@ def main():
     step = 1 / len(partitions)
     threshold = step
 
-    metrics_per_class = {real_cat: {"tp": 0, "tn":0, "fp": 0, "fn": 0} for real_cat in categories} #TODO: esto debería ir en el for ?
+    metrics_per_class = {real_cat: {"tp": 0, "tn":0, "fp": 0, "fn": 0} for real_cat in categories}
 
     with open("post_processing/classification.csv", "w") as classifier_file:
         for partition in partitions:
