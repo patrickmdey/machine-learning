@@ -85,7 +85,7 @@ def calculate_roc(threshold):
         stats_per_class = {real_cat: {"tp": 0, "tn":0, "fp": 0, "fn": 0} for real_cat in categories}
         for line in c_file:
             if "prediction" in line:
-                continue 
+                continue #we consider all partitions 
             values = line.split(",")
             predicted_cat = values[0]
             real_cat = values[len(values) - 1][:-1]

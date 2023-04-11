@@ -66,7 +66,6 @@ def get_conditional_probs(instance, class_probability, class_qty, freq_table, ca
 
     return probabilities
         
-# TODO: fix
 def partition_dataset(df, partition_percentage):
     # shuffle dataframe rows
     df = df.sample(frac=1).reset_index(drop=True)
@@ -81,9 +80,8 @@ def partition_dataset(df, partition_percentage):
         bottom += partition_size
         up += partition_size
         if up > len(df):
-            up = partition_size
+            up = len(df)
     return partitions
-
 
 def main():
     use_unidecode = True
@@ -94,7 +92,6 @@ def main():
     df = df.loc[(df["categoria"] != "Noticias destacadas") & (df["categoria"] != "Destacadas")]
 
     partitions = partition_dataset(df, 0.2) # TODO: capaz recibirlo de config
-    partitions = partitions[:-1] #FIXME: 
 
     categories = sorted(df["categoria"].unique())
 
