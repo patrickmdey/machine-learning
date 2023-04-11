@@ -52,8 +52,12 @@ def main():
         results = {}
         # Obtenemos vnb para cada clase
         for key in class_probability:
-            results[key] = class_probability[key] * np.prod(value_conditional_probability[key])
+            results[key] = class_probability[key] * np.prod(value_conditional_probability[key]) #p(v) * p(a1/v) * p(a2/v)* ... * p(ai/v)
+        real_results = results.copy()
+        for key in results:
+            real_results[key] = results[key] / sum(results.values())
 
-        print("vj/ai = " + str(results))
+        print("vj/ai = " + str(real_results))
+
 if __name__ == "__main__":
     main()

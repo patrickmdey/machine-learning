@@ -22,7 +22,6 @@ def remove_stop_words_from(list,use_unidecode):
             
         list[idx] = " ".join(mod_words)
         title_words = list[idx].split(" ")
-
     return list
 
 def get_freq_table(df):
@@ -94,7 +93,7 @@ def main():
     df["titular"] = remove_stop_words_from(df["titular"].tolist(), use_unidecode)
     df = df.loc[(df["categoria"] != "Noticias destacadas") & (df["categoria"] != "Destacadas")]
 
-    partitions = partition_dataset(df, 0.4) # TODO: capaz recibirlo de config
+    partitions = partition_dataset(df, 0.2) # TODO: capaz recibirlo de config
     partitions = partitions[:-1] #FIXME: 
 
     categories = sorted(df["categoria"].unique())
