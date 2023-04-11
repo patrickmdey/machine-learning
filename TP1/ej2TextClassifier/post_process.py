@@ -5,7 +5,6 @@ import numpy as np
 
 def get_categories():
     with open ("post_processing/classification.csv", "r") as c_file:
-        # prediction,Nacional,Salud,Economia,Destacadas,Ciencia y Tecnologia,Deportes,Internacional,Entretenimiento,real
         return c_file.readline().split(",")[1:-1]        
 
 def get_heatmap(df):
@@ -14,17 +13,15 @@ def get_heatmap(df):
     plt.tight_layout()
     plt.savefig("post_processing/heatmap.png")
 
-def get_graphs():
-    df = pd.read_csv("post_processing/confusion_matrix.csv")
-    get_heatmap(df)
-
 
 # prediction,Nacional,Salud,Economia,Destacadas,Ciencia y Tecnologia,Deportes,Internacional,Entretenimiento,real
-def calculate_metrics():
+def calculate_metrics(categories):
+    confusion_matrix = {real_cat: {pred_cat: 0 for pred_cat in categories} for real_cat in categories}
     with open ("post_processing/classification.csv", "r") as c_file:
-        categories = c_file.readline().split(",")[1:-1]
+        c_file.readline()
+        # categories = c_file.readline().split(",")[1:-1]
         stats_per_class = [{real_cat: {"tp": 0, "tn":0, "fp": 0, "fn": 0} for real_cat in categories}]
-        confusion_matrix = {real_cat: {pred_cat: 0 for pred_cat in categories} for real_cat in categories}
+        # confusion_matrix = {real_cat: {pred_cat: 0 for pred_cat in categories} for real_cat in categories}
         #idx = 0
         for line in c_file:
             if "prediction" in line: #new train-test partition
@@ -75,13 +72,15 @@ def calculate_metrics():
         pd.DataFrame(metrics_per_class["mean"]).to_csv("out/mean_metrics.csv")
         pd.DataFrame(metrics_per_class["std"]).to_csv("out/std_metrics.csv")
         
-    c_file.close()    
+    c_file.close()
+    return confusion_matrix
         
 # TODO: separar por iteracion y capaz mostrar un grafico con el desvio
-def calculate_roc(threshold):
+def calculate_roc(threshold, categories):
     stats_per_class = {}
     with open ("post_processing/classification.csv", "r") as c_file:
-        categories = sorted(c_file.readline().split(",")[1:-1])
+        c_file.readline()
+        # categories = sorted(c_file.readline().split(",")[1:-1])
         stats_per_class = {real_cat: {"tp": 0, "tn":0, "fp": 0, "fn": 0} for real_cat in categories}
         for line in c_file:
             if "prediction" in line:
@@ -110,17 +109,40 @@ def graph_roc(rocs, categories, xticks):
     for i, cat in enumerate(categories):
         x = [rocx["fpr"] for rocx in rocs[i]]
         y = [rocy["tpr"] for rocy in rocs[i]]
-        plt.plot(x,y, 'o-', label=cat)
+        plt.plot(x,y, 'o-', label=cat, markersize=4)
         plt.xticks(xticks)
         plt.xlabel("FPR")
         plt.ylabel("TPR")
+    plt.plot([0,1], [0,1], '--', color='grey')
     plt.legend()
     plt.title("Curva ROC")
+    plt.tight_layout()
+    plt.show() #TODO: remove
     plt.savefig("out/roc.png")
+
+def get_full_metric_csv():
+
+    mean_df = pd.read_csv("out/mean_metrics.csv")
+    std_df = pd.read_csv("out/std_metrics.csv")
+    mean_df = mean_df.drop(columns=["Unnamed: 0"])
+    std_df = std_df.drop(columns=["Unnamed: 0"])
+    full_df = pd.DataFrame(columns=mean_df.columns, index=mean_df.index)
+
+    for cat in mean_df.index:
+        full_df.loc[cat] = [f"{round(mean_df.loc[cat][col], 3)} +- 0.00" + f"{std_df.loc[cat][col]:.3}"[-1] for col in mean_df.columns]
+    
+    full_df.insert(0, "metric", ["accuracy", "precision", "fpr", "tpr", "f1"])
+    full_df.to_csv("out/full_metrics.csv")
+    
 
 def main():
     categories = get_categories()
-    calculate_metrics()
+    confusion_matrix_dict = calculate_metrics(categories)
+    
+    get_full_metric_csv()
+
+    get_heatmap(pd.DataFrame(confusion_matrix_dict))
+
     rocs = []
     roc_for_graph = []
 
@@ -130,12 +152,13 @@ def main():
     for idx, cat in enumerate(categories):
         rocs.clear()
         for threshold in thresholds:
-            roc = calculate_roc(threshold)
+            roc = calculate_roc(threshold, categories)
             fpr = roc[cat]["fp"] / (roc[cat]["fp"] + roc[cat]["tn"]) 
             tpr = roc[cat]["tp"] / (roc[cat]["tp"] + roc[cat]["fn"])
             rocs.append({"fpr": fpr, "tpr": tpr})
         roc_for_graph.append(rocs.copy())
 
     graph_roc(roc_for_graph,categories, thresholds)
+
 if __name__ == "__main__":
     main()

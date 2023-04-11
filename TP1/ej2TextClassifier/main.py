@@ -44,7 +44,6 @@ def get_freq_table(df):
 #P(ai/vj) * P(vj)
 def get_conditional_probs(instance, class_probability, class_qty, freq_table, categories):
     probabilities = {}
-    
     for cat in categories:
         probabilities[cat] = 0
     
@@ -76,11 +75,18 @@ def partition_dataset(df, partition_percentage):
     bottom = 0
     up = partition_size
     while bottom < len(df):
+        
         partitions.append(df[bottom:up].copy())
         bottom += partition_size
         up += partition_size
         if up > len(df):
             up = len(df)
+
+    if  (up - bottom) != partition_size:
+        partitions[-2] = pd.concat([partitions[-2], partitions[-1]], ignore_index=True)
+        
+        partitions = partitions[:-1]
+    
     return partitions
 
 def main():
@@ -91,14 +97,10 @@ def main():
     df["titular"] = remove_stop_words_from(df["titular"].tolist(), use_unidecode)
     df = df.loc[(df["categoria"] != "Noticias destacadas") & (df["categoria"] != "Destacadas")]
 
-    partitions = partition_dataset(df, 0.2) # TODO: capaz recibirlo de config
+    partitions = partition_dataset(df, 0.3) # TODO: capaz recibirlo de config
+    print(len(partitions))
 
     categories = sorted(df["categoria"].unique())
-
-    step = 1 / len(partitions)
-    threshold = step
-
-    metrics_per_class = {real_cat: {"tp": 0, "tn":0, "fp": 0, "fn": 0} for real_cat in categories}
 
     with open("post_processing/classification.csv", "w") as classifier_file:
         for partition in partitions:
@@ -126,10 +128,6 @@ def main():
                 classifier_file.write(predicted_cat + "," + ",".join(str(prob) for prob in probabilites.values())+ 
                                       "," + real_cat + "\n")
                     
-
-            threshold += step
-    pd.DataFrame(metrics_per_class).to_csv("post_processing/metrics_per_class_.csv")
-
         
 if __name__ == "__main__":
     main()
