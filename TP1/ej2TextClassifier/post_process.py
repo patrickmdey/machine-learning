@@ -117,7 +117,6 @@ def graph_roc(rocs, categories, xticks):
     plt.legend()
     plt.title("Curva ROC")
     plt.tight_layout()
-    plt.show() #TODO: remove
     plt.savefig("out/roc.png")
 
 def get_full_metric_csv():
