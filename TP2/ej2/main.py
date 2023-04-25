@@ -8,7 +8,8 @@ df_one_star = df[df['Star Rating'] == 1]
 word_count = df_one_star['wordcount'].sum()
 print("df len:", len(df))
 print("Total words:", word_count)
-print("Average word count for 1 star reviews:", word_count/len(df))
+print("Average word count for 1 star reviews:", word_count / len(df_one_star))
+
 
 # Ej b)
 def partition_dataset(df, partition_percentage):
@@ -28,12 +29,13 @@ def partition_dataset(df, partition_percentage):
         if up > len(df):
             up = len(df)
 
-    if  (up - bottom) != partition_size:
+    if (up - bottom) != partition_size:
         partitions[-2] = pd.concat([partitions[-2], partitions[-1]], ignore_index=True)
 
         partitions = partitions[:-1]
 
     return partitions
+
 
 # Ej c)
 df = df[['wordcount', 'titleSentiment', 'sentimentValue', 'Star Rating']]
@@ -46,7 +48,8 @@ df.loc[df['titleSentiment'] == 'negative', 'titleSentiment'] = 0
 
 # Aca habria que usar las particiones pero era para probar
 knn = KNN(3)
-knn.fit(df[['wordcount', 'titleSentiment', 'sentimentValue']].to_numpy(), df[['Star Rating']].to_numpy())
+knn.fit(df[['wordcount', 'titleSentiment', 'sentimentValue']].to_numpy(),
+        df[['Star Rating']].to_numpy())
 instance = df.iloc[0].to_numpy()
 X = instance[0:-1]
 y = instance[-1]
