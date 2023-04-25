@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 from KNN import *
 
-df = pd.read_csv("./reviews_sentiment .csv", sep=';')
+df = pd.read_csv("./reviews_sentiment.csv", sep=';')
 # Ej a)
 df_one_star = df[df['Star Rating'] == 1]
 word_count = df_one_star['wordcount'].sum()
