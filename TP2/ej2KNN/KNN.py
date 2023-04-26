@@ -8,12 +8,10 @@ class KNN:
         self.k = k
 
     def fit(self, X, y):
+        print("X")
+        print(X)
         self.stored_attrs = X
         self.stored_classifications = y
-        print("X[:5]:")
-        print(X[:5])
-        print("y[:5]:")
-        print(y[:5])
 
     def predict(self, instance, weighted=False):
         distances = np.sqrt(np.sum((self.stored_attrs - instance) ** 2, axis=1).astype(np.float64))
@@ -29,7 +27,6 @@ class KNN:
             weights[classifications[idx]] += (1 / distances[idx]) if weighted else 1
 
         # return max key
-        print("weights:", weights)
         return max(weights, key=weights.get)
 
         # k_nearest = self.stored_classifications[np.argsort(distances)[:self.k]]
