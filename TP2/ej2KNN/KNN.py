@@ -8,8 +8,8 @@ class KNN:
         self.k = k
 
     def fit(self, X, y):
-        print("X")
-        print(X)
+        # print("X")
+        # print(X)
         self.stored_attrs = X
         self.stored_classifications = y
 
@@ -18,6 +18,12 @@ class KNN:
         # Argsort returns the indices that would sort an array
         sorted_indices = np.argsort(distances)[:self.k]
         classifications = self.stored_classifications.T[0]
+
+        # TODO: check
+        if weighted and 0.0 in distances:
+            return np.bincount(classifications[np.where(distances == 0.0)[0]]).argmax() 
+            # max(classifications[np.where(distances == 0)[0][0]].bincount())
+            # return classifications[np.where(distances == 0)[0][0]]
 
         weights = {}
         for idx in sorted_indices:

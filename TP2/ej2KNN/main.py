@@ -4,7 +4,13 @@ import sys
 import pandas as pd
 import numpy as np
 from KNN import *
+# from sklearn.preprocessing import MinMaxScaler
+from post_processing import *
 
+def calculate_average_word_count(df, rating):
+    df_one_star = df[df['Star Rating'] == rating]
+    word_count = df_one_star['wordcount'].sum()
+    print("Average word count for 1 star reviews:", word_count / len(df_one_star))
 
 def partition_dataset(df, partition_percentage):
     # shuffle dataframe rows
@@ -35,48 +41,69 @@ def main():
     csv_file = ""
     k = 3
     test_size = 0.2
-    with open(sys.argv[1], 'r') as config_file:
+    weighted = False
+    with open("config.json") as config_file: # open(sys.argv[1], 'r') as config_file:
         config = json.load(config_file)
         csv_file = config["file"]
         k = config["k"]
         test_size = config["test_size"]
+        weighted = config["weighted"]
 
     df = pd.read_csv(csv_file, sep=';')
+
     # Ej a)
+    calculate_average_word_count(df, 1)
     df_one_star = df[df['Star Rating'] == 1]
-    word_count = df_one_star['wordcount'].sum()
-    print("Average word count for 1 star reviews:", word_count / len(df_one_star))
+    # word_count = df_one_star['wordcount'].sum()
+    # print("Average word count for 1 star reviews:", word_count / len(df_one_star))
 
     # Ej c)
     # TODO: modularize
     df = df[['wordcount', 'titleSentiment', 'sentimentValue', 'Star Rating']]
     df['titleSentiment'] = df['titleSentiment'].fillna(0)
+    # TODO: mencionar por que usamos esto en fillna y capaz hacer varias pruebas
     df.loc[(df['titleSentiment'] == 0) & (df['Star Rating'] >= 3), 'titleSentiment'] = 'positive'
     df.loc[(df['titleSentiment'] == 0) & (df['Star Rating'] < 3), 'titleSentiment'] = 'negative'
 
     df.loc[df['titleSentiment'] == 'positive', 'titleSentiment'] = 1
     df.loc[df['titleSentiment'] == 'negative', 'titleSentiment'] = 0
 
-    partitions = partition_dataset(df, 0.2)
+    # TODO: check normalization
+    df_without_stars = df.loc[:, df.columns != 'Star Rating']
+    df_without_stars=(df_without_stars - df_without_stars.mean()) / df_without_stars.std()
+    df = pd.concat([df_without_stars, df['Star Rating']], axis=1)
+
+    # TODO: check
+    # scaler = MinMaxScaler()
+    # df = scaler.fit_transform(df[['wordcount', 'titleSentiment', 'sentimentValue']])
+
+    partitions = partition_dataset(df, test_size)
     knn = KNN(k)
 
-    with open("post_processing/classification.csv", "w") as classifier_file:
-        for partition in partitions:
-            test = partition
-            train = pd.concat([df for df in partitions if df is not partition])
-            train.reset_index(drop=True, inplace=True)
-            test.reset_index(drop=True, inplace=True)
-            knn.fit(train[['wordcount', 'titleSentiment', 'sentimentValue']].to_numpy(),
-                    train[['Star Rating']].to_numpy())
+    idx = 0
+    for partition in partitions:
+        
+        test = partition
+        train = pd.concat([df for df in partitions if df is not partition])
+        train.reset_index(drop=True, inplace=True)
+        test.reset_index(drop=True, inplace=True)
+        knn.fit(train[['wordcount', 'titleSentiment', 'sentimentValue']].to_numpy(),
+                train[['Star Rating']].to_numpy())
 
-            # TODO: move this up
-            test = test[['wordcount', 'titleSentiment', 'sentimentValue', 'Star Rating']]
-            for instance in test.to_numpy():
-                attributes = instance[0:-1]
-                print(attributes)
-                y = instance[-1]
-                print("Prediction: ", knn.predict(attributes))
+        df_to_csv = pd.DataFrame(columns=['predicted', 'real'])
+        new_row = {}
+        for instance in test.to_numpy():
+            attributes = instance[0:-1]
+            y = instance[-1]
 
+            prediction = knn.predict(attributes, weighted)
 
+            new_row['predicted'] = prediction
+            new_row['real'] = y
+            df_to_csv = pd.concat([df_to_csv, pd.DataFrame([new_row])], ignore_index=True)
+
+        df_to_csv.to_csv("post_processing/classification" + str(idx) + ".csv")
+        idx += 1
+    
 if __name__ == "__main__":
     main()
