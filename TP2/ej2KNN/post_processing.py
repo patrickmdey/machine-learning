@@ -6,10 +6,14 @@ import matplotlib.pyplot as plt
 # TODO: PASAR A % LA MATRIZ DE CONFUSION
 def get_heatmap(df):
     plt.clf()
-    sns.heatmap(df, annot=True, fmt='.0f')
+    cmap = sns.color_palette("light:b", as_cmap=True, n_colors=5)
+    sns.heatmap(df, cmap=cmap, annot=True, fmt="%")
     plt.tight_layout()
     plt.savefig("out/heatmap.png")
 
+def confusion_row_to_percent(row):
+    total = row.sum()
+    return row.apply(lambda x: (x / total).round(4))
 
 def compute_metrics(row, stats, confusion_matrix):
     predicted = row['predicted']
@@ -38,17 +42,16 @@ def main():
     
     for partition in range(file_amount):
         df = pd.read_csv("post_processing/classification" + str(partition) + ".csv")
-        # print("Partition: " + str(partition))
-        # print(df.head())
         metrics = calculate_metrics(df, confusion_matrix)
-        print(metrics[1]["tp"])
         for key in metrics:
             precision_per_class[-1][key] = metrics[key]["tp"] / (metrics[key]["tp"] + metrics[key]["fp"])
         
         precision_per_class.append({real_cat: 0 for real_cat in range(1, 6)})
     
-    print(precision_per_class)
     confusion_df = pd.DataFrame(confusion_matrix)
+    
+    confusion_df = confusion_df.apply(confusion_row_to_percent, axis=1)
+
     get_heatmap(confusion_df)
 
     metrics_per_class = {"mean": {cat: 0 for cat in range(1, 6)}, "std": {cat: 0 for cat in range(1, 6)}}
@@ -57,7 +60,6 @@ def main():
         metrics_per_class["std"][real_cat] = np.std([precision_per_class[i][real_cat] for i in range(len(precision_per_class))])
         
     
-    # print(metrics_per_class["mean"]) = {1: 0.9166666666666666, 2: 0.75, 3: 0.9333333333333333, 4: 1.0, 5: 0.8}
         
     pd.DataFrame(metrics_per_class["mean"], index=[0]).to_csv("out/mean_metrics.csv")
     pd.DataFrame(metrics_per_class["std"], index=[0]).to_csv("out/std_metrics.csv")

@@ -9,3 +9,4 @@ out
 *.png
 post_processing/
 classification.csv
+tenis.csv
