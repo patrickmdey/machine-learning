@@ -21,8 +21,7 @@ def bar_column(df, column_name):
 
 def categorize_columns(df, columns):
     for column_name in columns:
-        # quartiles = df[column_name].quantile([0.25, 0.5, 0.75, 1])
-        df[column_name] = pd.qcut(df[column_name], 4, labels=[0, 1, 2, 3]) # TODO CHECK!!!!!!!!!!!!!!
+        df[column_name] = pd.qcut(df[column_name], 4, labels=[0, 1, 2, 3])
     return df
 
 

@@ -1,5 +1,6 @@
 {
   "target": "Creditability",
   "file": "./german_credit.csv",
-  "max_depth": 100
+  "max_depth": 100,
+  "do_forest": false
 }

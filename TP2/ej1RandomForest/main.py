@@ -6,7 +6,6 @@ import numpy as np
 from preanalysis import categorize_columns
 from utils import *
 
-
 class Node:
     attr_name = ""
     attr_value = None
@@ -52,31 +51,20 @@ def create_tree(df, columns, target_column, parent):
 
     return root
 
+def rebuild_conditional_df(node, df, target_column):
+    conditions = {}
+    curr_node = node
+    while curr_node.parent is not None:
+        if curr_node.has_value:
+            conditions[curr_node.attr_name] = curr_node.attr_value
+        curr_node = curr_node.parent
+    conditional_df = df
+    for key in conditions:
+        conditional_df = df[df[key == conditions[key]]]
+    
+    return conditional_df[target_column].mode()[0]
 
-# Print the tree
-def print_tree(node, to_print):
-    to_print[node.attr_name] = {}
-    for key in node.children.keys():
-        if len(node.children[key].children) > 0:
-            print_tree(node.children[key], to_print[node.attr_name])
-        else:
-            to_print[node.attr_name][key] = node.children[key].attr_value
-
-    return to_print
-
-
-def tree_to_dict(tree):
-    dict_tree = {}
-    dict_tree[tree.attr_name] = {}
-    if len(tree.children) > 0:
-        for key in tree.children.keys():
-            dict_tree[tree.attr_name][key] = tree_to_dict(tree.children[key])
-    else:
-        dict_tree[tree.attr_name] = tree.attr_value
-
-    return dict_tree
-
-def classify_instance(node, instance, target_column):
+def classify_instance(node, instance, target_column, df):
     while node.attr_name != target_column:
         if not node.has_value:
             children = node.children
@@ -86,6 +74,10 @@ def classify_instance(node, instance, target_column):
                 return node.children[key].attr_value
             
             instance_value = instance[node.attr_name]
+            if instance_value not in children:
+                # print("ERROR: instance value not in children")
+                return rebuild_conditional_df(node, df, target_column)
+                
             node = children[instance_value]
         else:
             key = next(iter(node.children))
@@ -94,6 +86,7 @@ def classify_instance(node, instance, target_column):
     return node.attr_value
 
 
+# TODO: if it doesnt work, save conditional df to nodes
 def prune_tree(root, max_nodes, df, target_column):
     amount = 0
     nodes = [root]
@@ -108,24 +101,15 @@ def prune_tree(root, max_nodes, df, target_column):
 
         prev_nodes = nodes
         nodes = children
-        # print("amount", amount)
-
-    # print("alhoja")
     
     for node in prev_nodes:
         if node.attr_name != target_column:
-            conditions = {}
-            curr_node = node
-            while curr_node.parent is not None:
-                if curr_node.has_value:
-                    conditions[curr_node.attr_name] = curr_node.attr_value
-                curr_node = curr_node.parent
-            
-            conditional_df = df
-            for key in conditions:
-                conditional_df = df[df[key == conditions[key]]]
-            
-            node.children = {target_column: Node(node, target_column, conditional_df[target_column].mode()[0])}
+            # TODO: check
+            if not node.has_value and node.parent is not None:
+                node = node.parent
+        
+            most_common_class = rebuild_conditional_df(node, df, target_column)
+            node.children = {target_column: Node(node, target_column, most_common_class)}
 
 def count_nodes(root, target_column):
     amount = 0
@@ -141,16 +125,44 @@ def count_nodes(root, target_column):
     
     return amount
 
+def id3(df, columns, target_column):
+    partitions = partition_dataset(df, 0.1)
+    idx = 0
+    for partition in partitions:
+        test = partition
+        train = pd.concat([df for df in partitions if df is not partition])
+        train.reset_index(drop=True, inplace=True)
+        test.reset_index(drop=True, inplace=True)
+        root = create_tree(train, columns, target_column, None)
+
+        # print("ANTES")
+        # print(count_nodes(root, target_column))
+        # # prune_tree(root, max_detph, df, target_column)
+        # print("Despues")
+        # print(count_nodes(root, target_column))
+
+        df_to_csv = pd.DataFrame(columns=["predicted", "real"])
+        
+        for _, instance in test.iterrows():
+            prediction = classify_instance(root, instance, target_column, df)
+            real = instance[target_column]
+            df_to_csv = pd.concat([df_to_csv, pd.DataFrame([{"predicted": prediction, "real": real}])], ignore_index=True)
+
+        # TODO: add extension for node precision 
+        df_to_csv.to_csv("post_processing/classification" + str(idx) +".csv", index=False)
+        idx += 1
 
 def main():
     csv_file = ""
     target_column = ""
-    max_depth = 0
-    with open("config.json") as config_file:#sys.argv[1], 'r') as config_file:
+    max_depth = 10
+    do_forest = False
+    with open("config.json") as config_file:#sys.argv[1], 'r') as config_file: #TODO: remove hardcode
         config = json.load(config_file)
         csv_file = config["file"]
         target_column = config["target"]
         max_depth = config["max_depth"]
+        do_forest = config["do_forest"]
 
     df = pd.read_csv(csv_file)
 
@@ -158,21 +170,12 @@ def main():
     columns = ["Duration of Credit (month)", "Credit Amount", "Age (years)"]
     df = categorize_columns(df, columns)
 
-    #TODO: shuffle dataset
-
     attribute_columns = df.loc[:, df.columns != target_column].columns.tolist()
-
-    root = create_tree(df, attribute_columns, target_column, None)
-    print("ANTES")
-    print(count_nodes(root, target_column))
-    prune_tree(root, 10, df, target_column)
-    print("Despues")
-    print(count_nodes(root, target_column))
-    
-    print("predict: " + str(classify_instance(root, df.iloc[47], target_column)))
-    print(df.iloc[47][target_column])
-    print("a")
-
+    if do_forest:
+        print("Random Forest")
+    else:
+        print("ID3")
+        id3(df, attribute_columns, target_column)
 
 if __name__ == "__main__":
     main()

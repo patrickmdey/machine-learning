@@ -53,9 +53,6 @@ def main():
 
     # Ej a)
     calculate_average_word_count(df, 1)
-    # df_one_star = df[df['Star Rating'] == 1]
-    # word_count = df_one_star['wordcount'].sum()
-    # print("Average word count for 1 star reviews:", word_count / len(df_one_star))
 
     # Ej c)
     # TODO: modularize

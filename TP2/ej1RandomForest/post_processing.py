@@ -15,6 +15,7 @@ def confusion_row_to_percent(row):
     total = row.sum()
     return row.apply(lambda x: (x / total).round(4))
 
+# TODO: this is not the tree precision
 def compute_metrics(row, stats, confusion_matrix):
     predicted = row['predicted']
     real = row['real']
@@ -27,7 +28,7 @@ def compute_metrics(row, stats, confusion_matrix):
 
 def calculate_metrics(df, confusion_matrix):
     stats_per_rating = {}
-    for stars in range(1, 6):
+    for stars in range(0, 2):
         stats_per_rating[stars] = {"tp": 0, "tn":0, "fp": 0, "fn": 0}
 
     df.apply(lambda row: compute_metrics(row, stats_per_rating, confusion_matrix), axis=1)
@@ -35,10 +36,13 @@ def calculate_metrics(df, confusion_matrix):
 
 
 def main():
-    file_amount = 5
-    confusion_matrix = {real_cat: {pred_cat: 0 for pred_cat in range(1, 6)} for real_cat in range(1, 6)}
+    file_amount = 4
 
-    precision_per_class = [{real_cat: 0 for real_cat in range(1, 6)}] #* file_amount
+    # TODO: extract from dataframe or config file
+    classes = range(0, 2)
+    confusion_matrix = {real_cat: {pred_cat: 0 for pred_cat in classes} for real_cat in classes}
+
+    precision_per_class = [{real_cat: 0 for real_cat in classes}] #* file_amount
     
     for partition in range(file_amount):
         df = pd.read_csv("post_processing/classification" + str(partition) + ".csv")
@@ -46,7 +50,7 @@ def main():
         for key in metrics:
             precision_per_class[-1][key] = metrics[key]["tp"] / (metrics[key]["tp"] + metrics[key]["fp"])
         
-        precision_per_class.append({real_cat: 0 for real_cat in range(1, 6)})
+        precision_per_class.append({real_cat: 0 for real_cat in classes})
     
     confusion_df = pd.DataFrame(confusion_matrix)
     
@@ -54,13 +58,11 @@ def main():
 
     get_heatmap(confusion_df)
 
-    metrics_per_class = {"mean": {cat: 0 for cat in range(1, 6)}, "std": {cat: 0 for cat in range(1, 6)}}
-    for real_cat in range(1, 6):
+    metrics_per_class = {"mean": {cat: 0 for cat in classes}, "std": {cat: 0 for cat in classes}}
+    for real_cat in classes:
         metrics_per_class["mean"][real_cat] = np.mean([precision_per_class[i][real_cat] for i in range(len(precision_per_class))])
         metrics_per_class["std"][real_cat] = np.std([precision_per_class[i][real_cat] for i in range(len(precision_per_class))])
-        
-    
-        
+
     pd.DataFrame(metrics_per_class["mean"], index=[0]).to_csv("out/mean_metrics.csv")
     pd.DataFrame(metrics_per_class["std"], index=[0]).to_csv("out/std_metrics.csv")
         
