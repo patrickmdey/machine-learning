@@ -41,7 +41,7 @@ def main():
     precision_per_class = [{real_cat: 0 for real_cat in range(1, 6)}] #* file_amount
     
     for partition in range(file_amount):
-        df = pd.read_csv("post_processing/classification" + str(partition) + ".csv")
+        df = pd.read_csv("post_processing/knn/classification" + str(partition) + ".csv")
         metrics = calculate_metrics(df, confusion_matrix)
         for key in metrics:
             precision_per_class[-1][key] = metrics[key]["tp"] / (metrics[key]["tp"] + metrics[key]["fp"])

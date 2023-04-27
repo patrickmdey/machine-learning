@@ -2,14 +2,15 @@ import pandas as pd
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
+import sys
 
 # TODO: remove extra zeros
-def get_heatmap(df):
+def get_heatmap(df,method):
     plt.clf()
     cmap = sns.color_palette("light:b", as_cmap=True, n_colors=5)
     sns.heatmap(df, cmap=cmap, annot=True, fmt="%")
     plt.tight_layout()
-    plt.savefig("out/heatmap.png")
+    plt.savefig("out/"+method+"/heatmap.png")
 
 def confusion_row_to_percent(row):
     total = row.sum()
@@ -36,16 +37,25 @@ def calculate_metrics(df, confusion_matrix):
 
 
 def main():
-    file_amount = 4
 
-    # TODO: extract from dataframe or config file
+    method = sys.argv[1] if len(sys.argv) > 1 else "id3"
+    if method not in ["id3", "random_forest"]:
+        print("Invalid method")
+        return
+
+    if method == "id3":
+        partition_amount = int(sys.argv[2] if len(sys.argv) > 2 else 5)
+    else:
+        partition_amount = 1
+        tree_amount = sys.argv[2] if len(sys.argv) > 2 else 5
+    
     classes = range(0, 2)
     confusion_matrix = {real_cat: {pred_cat: 0 for pred_cat in classes} for real_cat in classes}
 
-    precision_per_class = [{real_cat: 0 for real_cat in classes}] #* file_amount
+    precision_per_class = [{real_cat: 0 for real_cat in classes}]
     
-    for partition in range(file_amount):
-        df = pd.read_csv("post_processing/classification" + str(partition) + ".csv")
+    for partition in range(partition_amount):
+        df = pd.read_csv("post_processing/"+method+"/classification" + ("_"+ (str(tree_amount) + "_trees") if method == "random_forest" else str(partition)) + ".csv")
         metrics = calculate_metrics(df, confusion_matrix)
         for key in metrics:
             precision_per_class[-1][key] = metrics[key]["tp"] / (metrics[key]["tp"] + metrics[key]["fp"])
@@ -56,17 +66,19 @@ def main():
     
     confusion_df = confusion_df.apply(confusion_row_to_percent, axis=1)
 
-    get_heatmap(confusion_df)
+    get_heatmap(confusion_df, method)
 
     metrics_per_class = {"mean": {cat: 0 for cat in classes}, "std": {cat: 0 for cat in classes}}
     for real_cat in classes:
         metrics_per_class["mean"][real_cat] = np.mean([precision_per_class[i][real_cat] for i in range(len(precision_per_class))])
         metrics_per_class["std"][real_cat] = np.std([precision_per_class[i][real_cat] for i in range(len(precision_per_class))])
 
-    pd.DataFrame(metrics_per_class["mean"], index=[0]).to_csv("out/mean_metrics.csv")
-    pd.DataFrame(metrics_per_class["std"], index=[0]).to_csv("out/std_metrics.csv")
-        
+    # pd.DataFrame(metrics_per_class["mean"], index=[0]).to_csv("out/mean_metrics.csv")
+    # pd.DataFrame(metrics_per_class["std"], index=[0]).to_csv("out/std_metrics.csv")
 
+    pd.DataFrame(metrics_per_class["mean"], index=[0]).to_csv("out/"+method+"/mean_metrics.csv")
+    pd.DataFrame(metrics_per_class["std"], index=[0]).to_csv("out/"+method+"/std_metrics.csv")
+        
             
 if __name__ == "__main__":
     main()

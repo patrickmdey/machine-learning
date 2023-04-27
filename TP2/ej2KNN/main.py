@@ -96,10 +96,10 @@ def main():
             prediction = knn.predict(attributes, weighted)
 
             new_row['predicted'] = prediction
-            new_row['real'] = y
+            new_row['real'] = int(y)
             df_to_csv = pd.concat([df_to_csv, pd.DataFrame([new_row])], ignore_index=True)
 
-        df_to_csv.to_csv("post_processing/classification" + str(idx) + ".csv")
+        df_to_csv.to_csv("post_processing/knn/classification" + str(idx) + ".csv")
         idx += 1
     
 if __name__ == "__main__":
