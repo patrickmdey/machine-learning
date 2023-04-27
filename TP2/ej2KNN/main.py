@@ -4,7 +4,7 @@ import sys
 import pandas as pd
 import numpy as np
 from KNN import *
-# from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import MinMaxScaler
 from post_processing import *
 
 def calculate_average_word_count(df, rating):
@@ -66,13 +66,13 @@ def main():
     df.loc[df['titleSentiment'] == 'negative', 'titleSentiment'] = 0
 
     # TODO: check normalization
-    df_without_stars = df.loc[:, df.columns != 'Star Rating']
-    df_without_stars=(df_without_stars - df_without_stars.mean()) / df_without_stars.std()
-    df = pd.concat([df_without_stars, df['Star Rating']], axis=1)
+    # df_without_stars = df.loc[:, df.columns != 'Star Rating']
+    # df_without_stars=(df_without_stars - df_without_stars.mean()) / df_without_stars.std()
+    # df = pd.concat([df_without_stars, df['Star Rating']], axis=1)
 
     # TODO: check
-    # scaler = MinMaxScaler()
-    # df = scaler.fit_transform(df[['wordcount', 'titleSentiment', 'sentimentValue']])
+    scaler = MinMaxScaler()
+    df[['wordcount', 'titleSentiment', 'sentimentValue']] = scaler.fit_transform(df[['wordcount', 'titleSentiment', 'sentimentValue']].values)
 
     partitions = partition_dataset(df, test_size)
     knn = KNN(k)
