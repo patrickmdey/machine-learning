@@ -24,21 +24,19 @@ class Node:
         self.has_value = hasValue
 
 
-def create_tree(df, columns, target_column, nodes, max_depth=0):
+def create_tree(df, columns, target_column, parent):
     if len(df[target_column].unique()) == 1:
-        return Node(None, target_column, df[target_column].unique()[0], {}, True)
+        return Node(parent, target_column, df[target_column].unique()[0], {}, True)
 
     # TODO:check condition
-    if columns is None or len(columns) == 0 or nodes == max_depth:
-        return Node(None, target_column, df[target_column].value_counts().idxmax(), {}, True)
-
-    nodes += 1
+    if columns is None or len(columns) == 0:
+        return Node(parent, target_column, df[target_column].mode()[0], {}, True)
 
     gains = calculate_gains(df, columns)
     max_gain_attr = max(gains, key=gains.get)
     # max_gain_value = max(gains.values())
 
-    root = Node(None, max_gain_attr, None)
+    root = Node(parent, max_gain_attr, None)
 
     for attr_value in df[max_gain_attr].unique():
         conditional_df = df[df[max_gain_attr] == attr_value]
@@ -49,8 +47,8 @@ def create_tree(df, columns, target_column, nodes, max_depth=0):
 
         new_cols = [column_name for column_name in conditional_df.columns.tolist() if column_name != target_column]
 
-        new_child = create_tree(conditional_df, new_cols, target_column, nodes, max_depth)
-        child.children[new_child.attr_value] = new_child
+        new_child = create_tree(conditional_df, new_cols, target_column, parent)
+        child.children[new_child.attr_name] = new_child
 
     return root
 
@@ -82,6 +80,11 @@ def classify_instance(node, instance, target_column):
     while node.attr_name != target_column:
         if not node.has_value:
             children = node.children
+            #TODO: check
+            if len(children) == 1 and next(iter(children)) == target_column:
+                key = next(iter(node.children))
+                return node.children[key].attr_value
+            
             instance_value = instance[node.attr_name]
             node = children[instance_value]
         else:
@@ -91,11 +94,59 @@ def classify_instance(node, instance, target_column):
     return node.attr_value
 
 
+def prune_tree(root, max_nodes, df, target_column):
+    amount = 0
+    nodes = [root]
+    prev_nodes = nodes
+    while amount < max_nodes:
+        children = []
+        for node in nodes:
+            if not node.has_value and node.attr_name != target_column:
+                amount += 1
+            for key, child in node.children.items():
+                children.append(child)
+
+        prev_nodes = nodes
+        nodes = children
+        # print("amount", amount)
+
+    # print("alhoja")
+    
+    for node in prev_nodes:
+        if node.attr_name != target_column:
+            conditions = {}
+            curr_node = node
+            while curr_node.parent is not None:
+                if curr_node.has_value:
+                    conditions[curr_node.attr_name] = curr_node.attr_value
+                curr_node = curr_node.parent
+            
+            conditional_df = df
+            for key in conditions:
+                conditional_df = df[df[key == conditions[key]]]
+            
+            node.children = {target_column: Node(node, target_column, conditional_df[target_column].mode()[0])}
+
+def count_nodes(root, target_column):
+    amount = 0
+    nodes = [root]
+    while len(nodes) > 0:
+        children = []
+        for node in nodes:
+            if not node.has_value and node.attr_name != target_column:
+                amount += 1
+            for key, child in node.children.items():
+                children.append(child)
+        nodes = children
+    
+    return amount
+
+
 def main():
     csv_file = ""
     target_column = ""
     max_depth = 0
-    with open(sys.argv[1], 'r') as config_file:
+    with open("config.json") as config_file:#sys.argv[1], 'r') as config_file:
         config = json.load(config_file)
         csv_file = config["file"]
         target_column = config["target"]
@@ -107,11 +158,19 @@ def main():
     columns = ["Duration of Credit (month)", "Credit Amount", "Age (years)"]
     df = categorize_columns(df, columns)
 
+    #TODO: shuffle dataset
+
     attribute_columns = df.loc[:, df.columns != target_column].columns.tolist()
 
-    root = create_tree(df, attribute_columns, target_column, 0, max_depth)
-
-    print(classify_instance(root, df.iloc[47], target_column))
+    root = create_tree(df, attribute_columns, target_column, None)
+    print("ANTES")
+    print(count_nodes(root, target_column))
+    prune_tree(root, 10, df, target_column)
+    print("Despues")
+    print(count_nodes(root, target_column))
+    
+    print("predict: " + str(classify_instance(root, df.iloc[47], target_column)))
+    print(df.iloc[47][target_column])
     print("a")
 
 
