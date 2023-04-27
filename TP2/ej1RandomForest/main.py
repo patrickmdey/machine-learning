@@ -132,32 +132,38 @@ def count_nodes(root, target_column):
     
     return amount
 
-def random_forest(df, target_column, test_percentage, examples_per_tree, tree_amount):
+def random_forest(df, attribute_columns, target_column, test_percentage, examples_per_tree, tree_amount, max_nodes):
     train, test = train_test_split(df, test_size=test_percentage)
     train.reset_index(drop=True, inplace=True)
     test.reset_index(drop=True, inplace=True)
 
     trees = []
     for _ in range(0, tree_amount):
-        tree = create_tree(train.sample(frac=1, replace=True), None, target_column, None)
-        prune_tree(tree, 80, df, target_column)
+        tree = create_tree(train.sample(frac=1, replace=True), attribute_columns, target_column, None)
+        if max_nodes != -1:
+            prune_tree(tree, 80, df, target_column)
         trees.append(tree)
         
     # TODO: change to apply
     most_voted = []
+    df_to_csv = pd.DataFrame(columns=["predicted", "real"])
     for _, instance in test.iterrows():
         predictions = []
         for tree in trees:
             predictions.append(classify_instance(tree, instance, target_column, df))
         
-        if instance[target_column] == 0:
-            print("Predicciones " + str(predictions))
-            most_voted.append(np.bincount(predictions).argmax())
-            print("REAL: " + str(instance[target_column]))
-            print("PREDICHOOOO: " + str(most_voted[-1]))
+        print("Predicciones " + str(predictions))
+        most_voted.append(np.bincount(predictions).argmax())
+        print("REAL: " + str(instance[target_column]))
+        print("PREDICHOOOO: " + str(most_voted[-1]))
+
+        df_to_csv = pd.concat([df_to_csv, pd.DataFrame([{"predicted": np.bincount(predictions).argmax(), 
+                                                         "real": instance[target_column]}])], ignore_index=True)
+    df_to_csv.to_csv("post_processing/random_forest/classification_" + str(tree_amount) +"_trees.csv", index=False)
+        
 
 
-def id3(df, columns, target_column):
+def id3(df, columns, target_column, max_nodes):
     partitions = partition_dataset(df, 0.1)
     idx = 0
     for partition in partitions:
@@ -167,6 +173,8 @@ def id3(df, columns, target_column):
         test.reset_index(drop=True, inplace=True)
         root = create_tree(train, columns, target_column, None)
 
+        if max_nodes != -1:
+            prune_tree(root, max_nodes, df, target_column)
         # print("ANTES")
         # print(count_nodes(root, target_column))
         # # prune_tree(root, max_detph, df, target_column)
@@ -181,19 +189,19 @@ def id3(df, columns, target_column):
             df_to_csv = pd.concat([df_to_csv, pd.DataFrame([{"predicted": prediction, "real": real}])], ignore_index=True)
 
         # TODO: add extension for node precision 
-        df_to_csv.to_csv("post_processing/classification" + str(idx) +".csv", index=False)
+        df_to_csv.to_csv("post_processing/id3/classification" + str(idx) +".csv", index=False)
         idx += 1
 
 def main():
     csv_file = ""
     target_column = ""
-    max_depth = 10
+    max_nodes = 10
     do_forest = False
     with open("config.json") as config_file:#sys.argv[1], 'r') as config_file: #TODO: remove hardcode
         config = json.load(config_file)
         csv_file = config["file"]
         target_column = config["target"]
-        max_depth = config["max_depth"]
+        max_nodes = config["max_nodes"]
         do_forest = config["do_forest"]
 
     df = pd.read_csv(csv_file)
@@ -205,10 +213,10 @@ def main():
     attribute_columns = df.loc[:, df.columns != target_column].columns.tolist()
     if do_forest:
         print("Random Forest")
-        random_forest(df, target_column, 0.2, 80, 10)
+        random_forest(df, attribute_columns, target_column, 0.2, 80, 10, max_nodes)
     else:
         print("ID3")
-        id3(df, attribute_columns, target_column)
+        id3(df, attribute_columns, target_column, max_nodes)
 
 if __name__ == "__main__":
     main()
