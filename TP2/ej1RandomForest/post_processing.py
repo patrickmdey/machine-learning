@@ -35,27 +35,21 @@ def calculate_metrics(df, confusion_matrix):
     df.apply(lambda row: compute_metrics(row, stats_per_rating, confusion_matrix), axis=1)
     return stats_per_rating
 
-
-def main():
-
-    method = sys.argv[1] if len(sys.argv) > 1 else "id3"
-    if method not in ["id3", "random_forest"]:
-        print("Invalid method")
-        return
-
-    if method == "id3":
-        partition_amount = int(sys.argv[2] if len(sys.argv) > 2 else 5)
-    else:
-        partition_amount = 1
-        tree_amount = sys.argv[2] if len(sys.argv) > 2 else 5
-    
+def get_metrics(method, max_nodes,partition_amount, tree_amount=None):    
     classes = range(0, 2)
     confusion_matrix = {real_cat: {pred_cat: 0 for pred_cat in classes} for real_cat in classes}
 
     precision_per_class = [{real_cat: 0 for real_cat in classes}]
-    
+
+    pre_path = "post_processing/"+method+"/"
+    pre_path += (max_nodes if max_nodes != "-1" else "no_max") + "_nodes/"
+
+
     for partition in range(partition_amount):
-        df = pd.read_csv("post_processing/"+method+"/classification" + ("_"+ (str(tree_amount) + "_trees") if method == "random_forest" else str(partition)) + ".csv")
+        post_path = ("_"+ (str(tree_amount) + "_trees") if method == "random_forest" else str(partition)) + ".csv"
+
+        df = pd.read_csv(pre_path + "classification" + post_path)
+
         metrics = calculate_metrics(df, confusion_matrix)
         for key in metrics:
             precision_per_class[-1][key] = metrics[key]["tp"] / (metrics[key]["tp"] + metrics[key]["fp"])
@@ -73,11 +67,26 @@ def main():
         metrics_per_class["mean"][real_cat] = np.mean([precision_per_class[i][real_cat] for i in range(len(precision_per_class))])
         metrics_per_class["std"][real_cat] = np.std([precision_per_class[i][real_cat] for i in range(len(precision_per_class))])
 
-    # pd.DataFrame(metrics_per_class["mean"], index=[0]).to_csv("out/mean_metrics.csv")
-    # pd.DataFrame(metrics_per_class["std"], index=[0]).to_csv("out/std_metrics.csv")
-
     pd.DataFrame(metrics_per_class["mean"], index=[0]).to_csv("out/"+method+"/mean_metrics.csv")
     pd.DataFrame(metrics_per_class["std"], index=[0]).to_csv("out/"+method+"/std_metrics.csv")
+
+
+def main():
+    tree_amount = None
+    method = sys.argv[1] if len(sys.argv) > 1 else "id3"
+    if method not in ["id3", "random_forest"]:
+        print("Invalid method")
+        return
+    
+    max_nodes = sys.argv[2] if len(sys.argv) > 2 else -1
+
+    if method == "id3":
+        partition_amount = int(sys.argv[3] if len(sys.argv) > 3 else 5)
+    else:
+        partition_amount = 1
+        tree_amount = sys.argv[3] if len(sys.argv) > 3 else 5
+
+    get_metrics(method, max_nodes, partition_amount, tree_amount)
         
             
 if __name__ == "__main__":
