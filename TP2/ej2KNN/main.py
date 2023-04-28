@@ -1,8 +1,4 @@
 import json
-import sys
-
-import pandas as pd
-import numpy as np
 from KNN import *
 from sklearn.preprocessing import MinMaxScaler
 from post_processing import *
