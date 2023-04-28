@@ -3,6 +3,7 @@ import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 import sys
+import os
 
 # TODO: remove extra zeros
 def get_heatmap(df,method):
@@ -70,6 +71,8 @@ def get_metrics(method, max_nodes,partition_amount, tree_amount=None):
     pd.DataFrame(metrics_per_class["mean"], index=[0]).to_csv("out/"+method+"/mean_metrics.csv")
     pd.DataFrame(metrics_per_class["std"], index=[0]).to_csv("out/"+method+"/std_metrics.csv")
 
+    return metrics_per_class
+
 
 def main():
     tree_amount = None
@@ -86,7 +89,13 @@ def main():
         partition_amount = 1
         tree_amount = sys.argv[3] if len(sys.argv) > 3 else 5
 
-    get_metrics(method, max_nodes, partition_amount, tree_amount)
+    metrics = get_metrics(method, max_nodes, partition_amount, tree_amount)
+    
+    if not os.path.exists("out/"+method+"/precision_vs_nodes.csv"):
+        pd.DataFrame([{"nodes": max_nodes, "mean_0": metrics["mean"][0], "std_0": metrics["std"][0], "mean_1": metrics["mean"][1], "std_1": metrics["std"][1]}]).to_csv("out/"+method+"/precision_vs_nodes.csv")
+    else:
+        metric_df = pd.read_csv("out/"+method+"/precision_vs_nodes.csv", usecols=["nodes", "mean_0", "std_0", "mean_1", "std_1"])
+        pd.concat([metric_df, pd.DataFrame([{"nodes": max_nodes, "mean_0": metrics["mean"][0], "std_0": metrics["std"][0], "mean_1": metrics["mean"][1], "std_1": metrics["std"][1]}])]).to_csv("out/"+method+"/precision_vs_nodes.csv")
         
             
 if __name__ == "__main__":
