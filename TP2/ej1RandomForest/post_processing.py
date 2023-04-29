@@ -46,12 +46,22 @@ def get_metrics(method, max_nodes,partition_amount, tree_amount=None):
     pre_path += (max_nodes if max_nodes != "-1" else "no_max") + "_nodes/"
 
 
+    precision_per_partition = [0 for i in range(partition_amount)]
+
+    precision_per_partition = {"train": [], "test": []}
+
     for partition in range(partition_amount):
         post_path = ("_"+ (str(tree_amount) + "_trees") if method == "random_forest" else str(partition)) + ".csv"
 
-        df = pd.read_csv(pre_path + "classification" + post_path)
+        test_df = pd.read_csv(pre_path + "test/classification" + post_path)
+        train_df = pd.read_csv(pre_path + "train/classification" + post_path)
 
-        metrics = calculate_metrics(df, confusion_matrix)
+        metrics = calculate_metrics(test_df, confusion_matrix)
+        precision_per_partition["test"].append(sum([metrics[key]["tp"] for key in metrics])/len(test_df))
+
+        metrics = calculate_metrics(train_df, confusion_matrix)
+        precision_per_partition["train"].append(sum([metrics[key]["tp"] for key in metrics])/len(train_df))
+
         for key in metrics:
             precision_per_class[-1][key] = metrics[key]["tp"] / (metrics[key]["tp"] + metrics[key]["fp"])
         
@@ -71,7 +81,30 @@ def get_metrics(method, max_nodes,partition_amount, tree_amount=None):
     pd.DataFrame(metrics_per_class["mean"], index=[0]).to_csv("out/"+method+"/mean_metrics.csv")
     pd.DataFrame(metrics_per_class["std"], index=[0]).to_csv("out/"+method+"/std_metrics.csv")
 
-    return metrics_per_class
+    mean_std_precision = {"train": 
+                            {"mean": np.mean(precision_per_partition["train"]), "std": np.std(precision_per_partition["train"])}, 
+                          "test": {"mean": np.mean(precision_per_partition["test"]), "std": np.std(precision_per_partition["test"])}}
+
+    return metrics_per_class, mean_std_precision
+
+def results_to_csv(metrics, precision, method, max_nodes):
+    if not os.path.exists("out/"+method+"/precision_vs_nodes.csv"):
+        pd.DataFrame([{"nodes": max_nodes, 
+                       "mean_test_precision": precision["test"]["mean"], "std_test_precision": precision["test"]["std"],
+                       "mean_train_precision": precision["train"]["mean"], "std_train_precision": precision["train"]["std"],
+                       }]).to_csv("out/"+method+"/precision_vs_nodes.csv")
+    else:
+        metric_df = pd.read_csv("out/"+method+"/precision_vs_nodes.csv", usecols=["nodes", "mean_test_precision", "std_test_precision", "mean_train_precision", "std_train_precision"])
+        pd.concat([metric_df, pd.DataFrame([{"nodes": max_nodes, 
+                       "mean_test_precision": precision["test"]["mean"], "std_test_precision": precision["test"]["std"],
+                       "mean_train_precision": precision["train"]["mean"], "std_train_precision": precision["train"]["std"],
+                       }])]).to_csv("out/"+method+"/precision_vs_nodes.csv")
+    
+    if not os.path.exists("out/"+method+"/metrics_vs_nodes.csv"):
+        pd.DataFrame([{"nodes": max_nodes, "mean_0": metrics["mean"][0], "std_0": metrics["std"][0], "mean_1": metrics["mean"][1], "std_1": metrics["std"][1]}]).to_csv("out/"+method+"/metrics_vs_nodes.csv")
+    else:
+        metric_df = pd.read_csv("out/"+method+"/metrics_vs_nodes.csv", usecols=["nodes", "mean_0", "std_0", "mean_1", "std_1"])
+        pd.concat([metric_df, pd.DataFrame([{"nodes": max_nodes, "mean_0": metrics["mean"][0], "std_0": metrics["std"][0], "mean_1": metrics["mean"][1], "std_1": metrics["std"][1]}])]).to_csv("out/"+method+"/metrics_vs_nodes.csv")
 
 
 def main():
@@ -89,13 +122,10 @@ def main():
         partition_amount = 1
         tree_amount = sys.argv[3] if len(sys.argv) > 3 else 5
 
-    metrics = get_metrics(method, max_nodes, partition_amount, tree_amount)
-    
-    if not os.path.exists("out/"+method+"/precision_vs_nodes.csv"):
-        pd.DataFrame([{"nodes": max_nodes, "mean_0": metrics["mean"][0], "std_0": metrics["std"][0], "mean_1": metrics["mean"][1], "std_1": metrics["std"][1]}]).to_csv("out/"+method+"/precision_vs_nodes.csv")
-    else:
-        metric_df = pd.read_csv("out/"+method+"/precision_vs_nodes.csv", usecols=["nodes", "mean_0", "std_0", "mean_1", "std_1"])
-        pd.concat([metric_df, pd.DataFrame([{"nodes": max_nodes, "mean_0": metrics["mean"][0], "std_0": metrics["std"][0], "mean_1": metrics["mean"][1], "std_1": metrics["std"][1]}])]).to_csv("out/"+method+"/precision_vs_nodes.csv")
+    metrics, precision = get_metrics(method, max_nodes, partition_amount, tree_amount)
+
+    results_to_csv(metrics, precision, method, max_nodes)
+
         
             
 if __name__ == "__main__":

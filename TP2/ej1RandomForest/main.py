@@ -132,6 +132,19 @@ def count_nodes(root, target_column):
     
     return amount
 
+def get_random_forest_prediction_df(df, trees, target_column, rows):
+    most_voted = []
+    df_to_csv = pd.DataFrame(columns=["predicted", "real"])
+
+    for _, instance in rows:
+        predictions = []
+        for tree in trees:
+            predictions.append(classify_instance(tree, instance, target_column, df))
+        most_voted.append(np.bincount(predictions).argmax())
+        df_to_csv = pd.concat([df_to_csv, pd.DataFrame([{"predicted": np.bincount(predictions).argmax(), 
+                                                         "real": instance[target_column]}])], ignore_index=True)
+    return df_to_csv
+
 # TODO: code test iterating through different tree_amount values
 def random_forest(df, attribute_columns, target_column, test_percentage, examples_per_tree, tree_amount, max_nodes):
     # TODO: maybe do k-cross for each partition like before
@@ -147,28 +160,26 @@ def random_forest(df, attribute_columns, target_column, test_percentage, example
             prune_tree(tree, max_nodes, df, target_column)
         trees.append(tree)
         
-    # TODO: change to apply
-    most_voted = []
-    df_to_csv = pd.DataFrame(columns=["predicted", "real"])
 
-    
-    for _, instance in test.iterrows():
-        predictions = []
-        for tree in trees:
-            predictions.append(classify_instance(tree, instance, target_column, df))
-        
-        most_voted.append(np.bincount(predictions).argmax())
-        # print("REAL: " + str(instance[target_column]))
-        # print("PREDICTED: " + str(most_voted[-1]))
-
-        df_to_csv = pd.concat([df_to_csv, pd.DataFrame([{"predicted": np.bincount(predictions).argmax(), 
-                                                         "real": instance[target_column]}])], ignore_index=True)
-    
     max_nodes_str = "no_max" if max_nodes == -1 else str(max_nodes)
     node_path = "post_processing/random_forest/" + max_nodes_str + "_nodes"
     os.mkdir(node_path) if not os.path.exists(node_path) else None
-    df_to_csv.to_csv(node_path + "/classification_" + str(tree_amount) +"_trees.csv", index=False)
+
+    test_df_to_csv = get_random_forest_prediction_df(df, trees, target_column, test.iterrows())
+    train_df_to_csv = get_random_forest_prediction_df(df, trees, target_column, train.iterrows())
+
+    os.mkdir(node_path + "/test") if not os.path.exists(node_path + "/test") else None
+    test_df_to_csv.to_csv(node_path + "/test/classification_" + str(tree_amount) +"_trees.csv", index=False)
+    os.mkdir(node_path + "/train") if not os.path.exists(node_path + "/train") else None
+    train_df_to_csv.to_csv(node_path + "/train/classification_" + str(tree_amount) +"_trees.csv", index=False)
         
+def get_id3_prediction_df(df, root, target_column, rows):
+    df_to_csv = pd.DataFrame(columns=["predicted", "real"])
+    for _, instance in rows:
+        prediction = classify_instance(root, instance, target_column, df)
+        real = instance[target_column]
+        df_to_csv = pd.concat([df_to_csv, pd.DataFrame([{"predicted": prediction, "real": real}])], ignore_index=True)
+    return df_to_csv
 
 def id3(df, columns, target_column, max_nodes):
     partitions = partition_dataset(df, 0.1)
@@ -184,30 +195,28 @@ def id3(df, columns, target_column, max_nodes):
         if max_nodes != -1:
             prune_tree(root, max_nodes, df, target_column)
 
-        df_to_csv = pd.DataFrame(columns=["predicted", "real"])
-        
-        for _, instance in test.iterrows():
-            prediction = classify_instance(root, instance, target_column, df)
-            real = instance[target_column]
-            df_to_csv = pd.concat([df_to_csv, pd.DataFrame([{"predicted": prediction, "real": real}])], ignore_index=True)
-
-        # TODO: add extension for node precision -> Listo
         node_path = "post_processing/id3/" + max_nodes_str + "_nodes"
         os.mkdir(node_path) if not os.path.exists(node_path) else None
-        df_to_csv.to_csv(node_path +"/classification" + str(idx) +".csv", index=False)
+
+        test_df_to_csv = get_id3_prediction_df(df, root, target_column, test.iterrows())
+        train_df_to_csv = get_id3_prediction_df(df, root, target_column, train.iterrows())
+
+        os.mkdir(node_path + "/test") if not os.path.exists(node_path + "/test") else None
+        test_df_to_csv.to_csv(node_path +"/test/classification" + str(idx) +".csv", index=False)
+        os.mkdir(node_path + "/train") if not os.path.exists(node_path + "/train") else None
+        train_df_to_csv.to_csv(node_path +"/train/classification" + str(idx) +".csv", index=False)
         idx += 1
+    
 
 def main():
     csv_file = ""
     target_column = ""
-    max_nodes = -1
-    do_forest = True
     with open("config.json") as config_file:#sys.argv[1], 'r') as config_file: #TODO: remove hardcode
         config = json.load(config_file)
         csv_file = config["file"]
         target_column = config["target"]
-        max_nodes = config["max_nodes"]
-        do_forest = config["do_forest"]
+        max_nodes = config["max_nodes"] if "max_nodes" in config else -1
+        do_forest = config["do_forest"] if "do_forest" in config else True
         tree_amount = config["tree_amount"] if do_forest and "tree_amount" in config else 10
     
     #TODO: check if it can be done via config.json
