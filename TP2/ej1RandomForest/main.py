@@ -132,13 +132,16 @@ def count_nodes(root, target_column):
     
     return amount
 
+# TODO: code test iterating through different tree_amount values
 def random_forest(df, attribute_columns, target_column, test_percentage, examples_per_tree, tree_amount, max_nodes):
+    # TODO: maybe do k-cross for each partition like before
     train, test = train_test_split(df, test_size=test_percentage)
     train.reset_index(drop=True, inplace=True)
     test.reset_index(drop=True, inplace=True)
 
     trees = []
     for _ in range(0, tree_amount):
+        # TODO: maybe replace frac with n and change number of examples per tree
         tree = create_tree(train.sample(frac=1, replace=True), attribute_columns, target_column, None)
         if max_nodes != -1:
             prune_tree(tree, max_nodes, df, target_column)
