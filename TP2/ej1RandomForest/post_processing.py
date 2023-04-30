@@ -6,6 +6,7 @@ import sys
 import os
 
 # TODO: remove extra zeros
+# TODO: change labels
 def get_heatmap(df,method):
     plt.clf()
     cmap = sns.color_palette("light:b", as_cmap=True, n_colors=5)

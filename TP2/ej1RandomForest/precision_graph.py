@@ -4,9 +4,7 @@ import matplotlib.pyplot as plt
 import os
 
 def get_precision_graph(df, method):
-
-    
-    df["nodes" == -1] = 1000
+    plt.clf()
 
     plt.plot(df["nodes"],df["mean_test_precision"], label="test")
     plt.plot(df["nodes"],df["mean_train_precision"], label="train")
@@ -15,7 +13,6 @@ def get_precision_graph(df, method):
     plt.legend(loc="upper right")
     plt.title("Precisión vs Cantidad de nodos")
     plt.savefig("out/"+method+"/precision_vs_nodes.png")
-    plt.clf()
 
 def main():
     method = sys.argv[1] if len(sys.argv) > 1 else "id3"
@@ -29,7 +26,7 @@ def main():
     
     df = pd.read_csv("out/"+method+"/precision_vs_nodes.csv")
 
-    get_precision_graph(df, method)
+    get_precision_graph(df.tail(-1), method)
 
 if __name__ == "__main__":
     main()
