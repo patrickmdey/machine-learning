@@ -147,37 +147,44 @@ def get_random_forest_prediction_df(df, trees, target_column, rows):
 
 # TODO: code test iterating through different tree_amount values
 def random_forest(df, attribute_columns, target_column, test_percentage, examples_per_tree, tree_amount, max_nodes):
-    # TODO: maybe do k-cross for each partition like before
-    train, test = train_test_split(df, test_size=test_percentage)
-    train.reset_index(drop=True, inplace=True)
-    test.reset_index(drop=True, inplace=True)
+    partitions = partition_dataset(df, test_percentage)
+    partitions_len = len(partitions)
 
-    trees = []
+    idx = 0
+    for partition in partitions:
+        test = partition
+        train = pd.concat([df for df in partitions if df is not partition])
+        train.reset_index(drop=True, inplace=True)
+        test.reset_index(drop=True, inplace=True)
 
-    
-    for _ in range(0, tree_amount):
+        trees = []
+
+        for _ in range(0, tree_amount):
         # TODO: maybe replace frac with n and change number of examples per tree
-        tree = create_tree(train.sample(frac=1, replace=True), attribute_columns, target_column, None)
-        if max_nodes != -1:
-            prune_tree(tree, max_nodes, df, target_column)
-        trees.append(tree)
+            tree = create_tree(train.sample(frac=1, replace=True), attribute_columns, target_column, None)
+            if max_nodes != -1:
+                prune_tree(tree, max_nodes, df, target_column)
+            trees.append(tree)
         
-    node_path = "post_processing/random_forest/" + str(int(test_percentage * 100)) + "/"
-    os.mkdir(node_path) if not os.path.exists(node_path) else None
+        node_path = "post_processing/random_forest/" + str(partitions_len) + "/"
+        os.mkdir(node_path) if not os.path.exists(node_path) else None
 
-    max_nodes_str = "no_max" if max_nodes == -1 else str(max_nodes)
-    node_path += max_nodes_str + "_nodes"
+        max_nodes_str = "no_max" if max_nodes == -1 else str(max_nodes)
+        node_path += max_nodes_str + "_nodes"
 
-    if max_nodes != -1:
+        os.mkdir(node_path) if not os.path.exists(node_path) else None
+
+        test_df_to_csv = get_random_forest_prediction_df(df, trees, target_column, test.iterrows())
+        os.mkdir(node_path + "/test") if not os.path.exists(node_path + "/test") else None
+        test_df_to_csv.to_csv(node_path + "/test/classification_" + str(idx) + "_" + 
+                              str(tree_amount) +"_trees.csv", index=False)
+
         train_df_to_csv = get_random_forest_prediction_df(df, trees, target_column, train.iterrows())  
         os.mkdir(node_path + "/train") if not os.path.exists(node_path + "/train") else None
-        train_df_to_csv.to_csv(node_path + "/train/classification_" + str(tree_amount) +"_trees.csv", index=False)
+        train_df_to_csv.to_csv(node_path + "/train/classification_" + str(idx) + "_" + 
+                               str(tree_amount) +"_trees.csv", index=False)
 
-    os.mkdir(node_path) if not os.path.exists(node_path) else None
-
-    test_df_to_csv = get_random_forest_prediction_df(df, trees, target_column, test.iterrows())
-    os.mkdir(node_path + "/test") if not os.path.exists(node_path + "/test") else None
-    test_df_to_csv.to_csv(node_path + "/test/classification_" + str(tree_amount) +"_trees.csv", index=False)
+        idx += 1
        
         
 def get_id3_prediction_df(df, root, target_column, rows):
@@ -216,9 +223,11 @@ def id3(df, columns, target_column, max_nodes, test_percentage):
         test_df_to_csv = get_id3_prediction_df(df, root, target_column, test.iterrows())
         os.mkdir(node_path + "/test") if not os.path.exists(node_path + "/test") else None
         test_df_to_csv.to_csv(node_path +"/test/classification" + str(idx) +".csv", index=False)
+
         train_df_to_csv = get_id3_prediction_df(df, root, target_column, train.iterrows())
         os.mkdir(node_path + "/train") if not os.path.exists(node_path + "/train") else None
         train_df_to_csv.to_csv(node_path +"/train/classification" + str(idx) +".csv", index=False)
+
         idx += 1
     
 

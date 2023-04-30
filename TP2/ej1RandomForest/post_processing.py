@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import sys
 import os
 
-def save_heatmap(df,method, partition_amount):
+def save_heatmap(df,method, partition_amount, tree_amount=None):
     plt.clf()
     cmap = sns.color_palette("light:b", as_cmap=True, n_colors=5)
     
@@ -19,9 +19,15 @@ def save_heatmap(df,method, partition_amount):
         tick_label.set_text(f"{int(tick_values[i] * 100)}%")
     cbar.ax.set_yticklabels(tick_labels)
 
-    ax.set_title("Matriz de confusión para " + method.upper() + " con " + str(partition_amount) + " particiones")
+    title = "Matriz de confusión para " + method.upper() + " con " + str(partition_amount) + " particiones"
+    if tree_amount is not None:
+        title += " y " + str(tree_amount) + " árboles"
+
+    ax.set_title(title, fontsize=7, pad=10)
     plt.tight_layout()
-    plt.savefig("out/"+method+ "/"+str(partition_amount)+"/heatmap.png")
+    path = "out/"+method+ "/"+str(partition_amount)
+    path += ("/" + str(tree_amount) + "_trees") if tree_amount is not None else ""
+    plt.savefig(path + "/heatmap.png")
 
 def confusion_row_to_percent(row):
     total = row.sum()
@@ -70,7 +76,9 @@ def get_metrics(method, max_nodes,partition_amount, tree_amount=None):
     precision_per_partition = {"train": [], "test": []}
 
     for partition in range(partition_amount):
-        post_path = ("_"+ (str(tree_amount) + "_trees") if method == "random_forest" else str(partition)) + ".csv"
+        # TODO: agregarle tambien a random forest el str partition amount
+        post_path = ("_"+ (str(partition) + "_" + str(tree_amount) + "_trees") if method == "random_forest" 
+                     else str(partition)) + ".csv"
 
         test_df = pd.read_csv(pre_path + "test/classification" + post_path)
         train_df = pd.read_csv(pre_path + "train/classification" + post_path)
@@ -83,10 +91,8 @@ def get_metrics(method, max_nodes,partition_amount, tree_amount=None):
         precision_per_partition["train"].append(current_correct/len(train_df))
     
     confusion_df = pd.DataFrame(confusion_matrix)
-    
     confusion_df = confusion_df.apply(confusion_row_to_percent, axis=1)
-
-    save_heatmap(confusion_df, method, partition_amount)
+    save_heatmap(confusion_df, method, partition_amount, tree_amount)
 
     mean_std_precision = {"train": 
                             {"mean": np.mean(precision_per_partition["train"]), 
@@ -98,19 +104,24 @@ def get_metrics(method, max_nodes,partition_amount, tree_amount=None):
 
     return mean_std_precision
 
-def results_to_csv(precision, method, max_nodes, partition_amount):
-
+def results_to_csv(precision, method, max_nodes, partition_amount, tree_amount=None):
     to_append = {
         "nodes": max_nodes, 
         "mean_test_precision": precision["test"]["mean"], "std_test_precision": precision["test"]["std"], "max_test_precision": precision["test"]["max_precision"],
         "mean_train_precision": precision["train"]["mean"], "std_train_precision": precision["train"]["std"], "max_train_precision": precision["train"]["max_precision"]
         }
+    
+    path = "out/" + method + "/" + str(partition_amount)
+    if tree_amount is not None:
+        path += "/" + str(tree_amount) + "_trees"
+    
+    path += "/precision_vs_nodes.csv"
                 
-    if not os.path.exists("out/"+method+"/"+str(partition_amount)+"/precision_vs_nodes.csv"):
-        pd.DataFrame([to_append]).to_csv("out/"+method+"/"+str(partition_amount)+"/precision_vs_nodes.csv")
+    if not os.path.exists(path):
+        pd.DataFrame([to_append]).to_csv(path)
     else:
-        metric_df = pd.read_csv("out/"+method+"/"+str(partition_amount)+"/precision_vs_nodes.csv", usecols=["nodes", "mean_test_precision", "std_test_precision", "mean_train_precision", "std_train_precision", "max_test_precision", "max_train_precision"])
-        pd.concat([metric_df, pd.DataFrame([to_append])]).to_csv("out/"+method+"/"+str(partition_amount)+"/precision_vs_nodes.csv")
+        metric_df = pd.read_csv(path, usecols=["nodes", "mean_test_precision", "std_test_precision", "mean_train_precision", "std_train_precision", "max_test_precision", "max_train_precision"])
+        pd.concat([metric_df, pd.DataFrame([to_append])]).to_csv(path)
 
 def main():
     tree_amount = None
@@ -121,18 +132,19 @@ def main():
     
     max_nodes = sys.argv[2] if len(sys.argv) > 2 else -1
 
-    if method == "id3":
-        partition_amount = int(sys.argv[3] if len(sys.argv) > 3 else 5)
-    else:
-        partition_amount = 1
-        tree_amount = sys.argv[3] if len(sys.argv) > 3 else 5
-
+    partition_amount = int(sys.argv[3] if len(sys.argv) > 3 else 5)
     path = "out/"+method+"/"+str(partition_amount)+"/"
     os.mkdir(path) if not os.path.exists(path) else None
+    
+    if method == "random_forest":
+        tree_amount = sys.argv[4] if len(sys.argv) > 4 else 5
+        path += (str(tree_amount) + "_trees/")
+        os.mkdir(path) if not os.path.exists(path) else None
 
     precision = get_metrics(method, max_nodes, partition_amount, tree_amount)
 
-    results_to_csv(precision, method, max_nodes, partition_amount)
+    os.remove(path + "/precision_vs_nodes.csv") if os.path.exists(path + "/precision_vs_nodes.csv") else None
+    results_to_csv(precision, method, max_nodes, partition_amount, tree_amount)
             
 if __name__ == "__main__":
     main()
