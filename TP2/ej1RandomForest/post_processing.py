@@ -5,14 +5,23 @@ import matplotlib.pyplot as plt
 import sys
 import os
 
-# TODO: remove extra zeros
-# TODO: change labels
-def get_heatmap(df,method):
+def save_heatmap(df,method, partition_amount):
     plt.clf()
     cmap = sns.color_palette("light:b", as_cmap=True, n_colors=5)
-    sns.heatmap(df, cmap=cmap, annot=True, fmt="%")
+    
+    ax = sns.heatmap(df, cmap=cmap, 
+                annot=True, fmt=".2%", xticklabels=["No Devuelve", "Devuelve"], yticklabels=["No Devuelve", "Devuelve"])
+    
+    cbar = ax.collections[0].colorbar
+    tick_labels = cbar.ax.get_yticklabels()
+    tick_values = cbar.get_ticks()
+    for i, tick_label in enumerate(tick_labels):
+        tick_label.set_text(f"{int(tick_values[i] * 100)}%")
+    cbar.ax.set_yticklabels(tick_labels)
+
+    ax.set_title("Matriz de confusión para " + method.upper() + " con " + str(partition_amount) + " particiones")
     plt.tight_layout()
-    plt.savefig("out/"+method+"/heatmap.png")
+    plt.savefig("out/"+method+ "/"+str(partition_amount)+"/heatmap.png")
 
 def confusion_row_to_percent(row):
     total = row.sum()
@@ -37,17 +46,26 @@ def calculate_metrics(df, confusion_matrix):
     df.apply(lambda row: compute_metrics(row, stats_per_rating, confusion_matrix), axis=1)
     return stats_per_rating
 
+def calculate_results(df, confusion_matrix=None):
+    correct = 0
+    for _, row in df.iterrows():
+        predicted = row['predicted']
+        real = row['real']
+        if predicted == real:
+            correct += 1
+            
+        if confusion_matrix is not None:
+            confusion_matrix[real][predicted] += 1
+
+    return correct
+
 def get_metrics(method, max_nodes,partition_amount, tree_amount=None):    
     classes = range(0, 2)
     confusion_matrix = {real_cat: {pred_cat: 0 for pred_cat in classes} for real_cat in classes}
 
-    precision_per_class = [{real_cat: 0 for real_cat in classes}]
+    pre_path = "post_processing/" + method + "/" + str(partition_amount) + "/"
 
-    pre_path = "post_processing/"+method+"/"
     pre_path += (max_nodes if max_nodes != "-1" else "no_max") + "_nodes/"
-
-
-    precision_per_partition = [0 for i in range(partition_amount)]
 
     precision_per_partition = {"train": [], "test": []}
 
@@ -57,56 +75,42 @@ def get_metrics(method, max_nodes,partition_amount, tree_amount=None):
         test_df = pd.read_csv(pre_path + "test/classification" + post_path)
         train_df = pd.read_csv(pre_path + "train/classification" + post_path)
 
-        metrics = calculate_metrics(test_df, confusion_matrix)
-        precision_per_partition["test"].append(sum([metrics[key]["tp"] for key in metrics])/len(test_df))
+        current_correct = calculate_results(test_df, confusion_matrix)
+        precision_per_partition["test"].append(current_correct/len(test_df))
 
-        metrics = calculate_metrics(train_df, confusion_matrix)
-        precision_per_partition["train"].append(sum([metrics[key]["tp"] for key in metrics])/len(train_df))
-
-        for key in metrics:
-            precision_per_class[-1][key] = metrics[key]["tp"] / (metrics[key]["tp"] + metrics[key]["fp"])
-        
-        precision_per_class.append({real_cat: 0 for real_cat in classes})
+        # TODO: meterle un if para esto hacerlo solo en el caso de precision vs nodos
+        current_correct = calculate_results(train_df)
+        precision_per_partition["train"].append(current_correct/len(train_df))
     
     confusion_df = pd.DataFrame(confusion_matrix)
     
     confusion_df = confusion_df.apply(confusion_row_to_percent, axis=1)
 
-    get_heatmap(confusion_df, method)
-
-    metrics_per_class = {"mean": {cat: 0 for cat in classes}, "std": {cat: 0 for cat in classes}}
-    for real_cat in classes:
-        metrics_per_class["mean"][real_cat] = np.mean([precision_per_class[i][real_cat] for i in range(len(precision_per_class))])
-        metrics_per_class["std"][real_cat] = np.std([precision_per_class[i][real_cat] for i in range(len(precision_per_class))])
-
-    pd.DataFrame(metrics_per_class["mean"], index=[0]).to_csv("out/"+method+"/mean_metrics.csv")
-    pd.DataFrame(metrics_per_class["std"], index=[0]).to_csv("out/"+method+"/std_metrics.csv")
+    save_heatmap(confusion_df, method, partition_amount)
 
     mean_std_precision = {"train": 
-                            {"mean": np.mean(precision_per_partition["train"]), "std": np.std(precision_per_partition["train"])}, 
-                          "test": {"mean": np.mean(precision_per_partition["test"]), "std": np.std(precision_per_partition["test"])}}
+                            {"mean": np.mean(precision_per_partition["train"]), 
+                             "std": np.std(precision_per_partition["train"]), 
+                                "max_precision": max(precision_per_partition['train'])}, 
+                          "test": {"mean": np.mean(precision_per_partition["test"]), 
+                                   "std": np.std(precision_per_partition["test"]), 
+                                   "max_precision": max(precision_per_partition['test'])}}
 
-    return metrics_per_class, mean_std_precision
+    return mean_std_precision
 
-def results_to_csv(metrics, precision, method, max_nodes):
-    if not os.path.exists("out/"+method+"/precision_vs_nodes.csv"):
-        pd.DataFrame([{"nodes": max_nodes, 
-                       "mean_test_precision": precision["test"]["mean"], "std_test_precision": precision["test"]["std"],
-                       "mean_train_precision": precision["train"]["mean"], "std_train_precision": precision["train"]["std"],
-                       }]).to_csv("out/"+method+"/precision_vs_nodes.csv")
+def results_to_csv(precision, method, max_nodes, partition_amount):
+
+    to_append = {
+        "nodes": max_nodes, 
+        "mean_test_precision": precision["test"]["mean"], "std_test_precision": precision["test"]["std"], "max_test_precision": precision["test"]["max_precision"],
+        "mean_train_precision": precision["train"]["mean"], "std_train_precision": precision["train"]["std"], "max_train_precision": precision["train"]["max_precision"]
+        }
+                
+    if not os.path.exists("out/"+method+"/"+str(partition_amount)+"/precision_vs_nodes.csv"):
+        pd.DataFrame([to_append]).to_csv("out/"+method+"/"+str(partition_amount)+"/precision_vs_nodes.csv")
     else:
-        metric_df = pd.read_csv("out/"+method+"/precision_vs_nodes.csv", usecols=["nodes", "mean_test_precision", "std_test_precision", "mean_train_precision", "std_train_precision"])
-        pd.concat([metric_df, pd.DataFrame([{"nodes": max_nodes, 
-                       "mean_test_precision": precision["test"]["mean"], "std_test_precision": precision["test"]["std"],
-                       "mean_train_precision": precision["train"]["mean"], "std_train_precision": precision["train"]["std"],
-                       }])]).to_csv("out/"+method+"/precision_vs_nodes.csv")
-    
-    if not os.path.exists("out/"+method+"/metrics_vs_nodes.csv"):
-        pd.DataFrame([{"nodes": max_nodes, "mean_0": metrics["mean"][0], "std_0": metrics["std"][0], "mean_1": metrics["mean"][1], "std_1": metrics["std"][1]}]).to_csv("out/"+method+"/metrics_vs_nodes.csv")
-    else:
-        metric_df = pd.read_csv("out/"+method+"/metrics_vs_nodes.csv", usecols=["nodes", "mean_0", "std_0", "mean_1", "std_1"])
-        pd.concat([metric_df, pd.DataFrame([{"nodes": max_nodes, "mean_0": metrics["mean"][0], "std_0": metrics["std"][0], "mean_1": metrics["mean"][1], "std_1": metrics["std"][1]}])]).to_csv("out/"+method+"/metrics_vs_nodes.csv")
-
+        metric_df = pd.read_csv("out/"+method+"/"+str(partition_amount)+"/precision_vs_nodes.csv", usecols=["nodes", "mean_test_precision", "std_test_precision", "mean_train_precision", "std_train_precision", "max_test_precision", "max_train_precision"])
+        pd.concat([metric_df, pd.DataFrame([to_append])]).to_csv("out/"+method+"/"+str(partition_amount)+"/precision_vs_nodes.csv")
 
 def main():
     tree_amount = None
@@ -123,11 +127,12 @@ def main():
         partition_amount = 1
         tree_amount = sys.argv[3] if len(sys.argv) > 3 else 5
 
-    metrics, precision = get_metrics(method, max_nodes, partition_amount, tree_amount)
+    path = "out/"+method+"/"+str(partition_amount)+"/"
+    os.mkdir(path) if not os.path.exists(path) else None
 
-    results_to_csv(metrics, precision, method, max_nodes)
+    precision = get_metrics(method, max_nodes, partition_amount, tree_amount)
 
-        
+    results_to_csv(precision, method, max_nodes, partition_amount)
             
 if __name__ == "__main__":
     main()
