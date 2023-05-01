@@ -12,6 +12,7 @@ do
                 \"file\": \"./german_credit.csv\",
                 \"tree_amount\": ${tree_amount[$j]},
                 \"test_percentage\": ${test_pc[$i]},
+                \"examples_per_tree\": 0.25,
                 \"do_forest\": true
                 }" > config.json
         python3 main.py random_forest

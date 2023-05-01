@@ -32,13 +32,17 @@ def partition_dataset(df, partition_percentage):
 
     return partitions
 
-def classify_using_knn(df, k, test_size, weighted, normalize):
+def classify_using_knn(df, k, test_size, weighted, normalize, remove_missing):
     df = df[['wordcount', 'titleSentiment', 'sentimentValue', 'Star Rating']]
-    df.loc[:, 'titleSentiment'] = df.loc[:, 'titleSentiment'].fillna(0)
-    # TODO: mencionar por que usamos esto en fillna y capaz hacer varias pruebas CAPAZ ELIMINARLOS Y LISTO
-    # TODO: cambiar a 0.5 quizas
-    df.loc[(df['titleSentiment'] == 0) & (df['Star Rating'] >= 3), 'titleSentiment'] = 'positive'
-    df.loc[(df['titleSentiment'] == 0) & (df['Star Rating'] < 3), 'titleSentiment'] = 'negative'
+    if remove_missing:
+        df = df.dropna()
+    
+    else:
+        df.loc[:, 'titleSentiment'] = df.loc[:, 'titleSentiment'].fillna(0)
+        # TODO: mencionar por que usamos esto en fillna y capaz hacer varias pruebas CAPAZ ELIMINARLOS Y LISTO
+        # TODO: cambiar a 0.5 quizas
+        df.loc[(df['titleSentiment'] == 0) & (df['Star Rating'] >= 3), 'titleSentiment'] = 'positive'
+        df.loc[(df['titleSentiment'] == 0) & (df['Star Rating'] < 3), 'titleSentiment'] = 'negative'
 
     df.loc[df['titleSentiment'] == 'positive', 'titleSentiment'] = 1
     df.loc[df['titleSentiment'] == 'negative', 'titleSentiment'] = 0
@@ -80,6 +84,7 @@ def main():
     test_size = 0.2
     weighted = False
     normalize = True
+    remove_missing = False
     with open("config.json") as config_file: # open(sys.argv[1], 'r') as config_file:
         config = json.load(config_file)
         csv_file = config["file"]
@@ -87,6 +92,7 @@ def main():
         test_size = config["test_size"]
         weighted = config["weighted"]
         normalize = config["normalize"]
+        remove_missing = config["remove_missing"]
     config_file.close()
 
     df = pd.read_csv(csv_file, sep=';')
@@ -95,7 +101,7 @@ def main():
     calculate_average_word_count(df, 1)
 
     # Ej c)
-    classify_using_knn(df, k, test_size, weighted, normalize)
+    classify_using_knn(df, k, test_size, weighted, normalize, remove_missing)
     
 if __name__ == "__main__":
     main()

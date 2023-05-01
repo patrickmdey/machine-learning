@@ -1,7 +1,7 @@
 #!/bin/bash
 
 max_node_amount=(50 80 100)
-tree_amount=(15) #(5 10 15)
+tree_amount=(10) #(5 10 15)
 test_pc=(0.1 0.2 0.3)
 partitions=(9 4 3)
 

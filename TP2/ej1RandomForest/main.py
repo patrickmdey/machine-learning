@@ -97,7 +97,7 @@ def prune_tree(root, max_nodes, df, target_column):
     amount = 0
     nodes = [root]
     prev_nodes = nodes
-    while amount < max_nodes:
+    while amount < max_nodes and len(nodes) > 0:
         children = []
         for node in nodes:
             if not node.has_value and node.attr_name != target_column:
@@ -115,7 +115,6 @@ def prune_tree(root, max_nodes, df, target_column):
                 node = node.parent
 
             most_common_class = node.conditional_df[target_column].mode()[0]
-            #most_common_class = rebuild_conditional_df(node, df, target_column)
             node.children = {target_column: Node(node, target_column, most_common_class)}
 
 def count_nodes(root, target_column):
@@ -161,7 +160,7 @@ def random_forest(df, attribute_columns, target_column, test_percentage, example
 
         for _ in range(0, tree_amount):
         # TODO: maybe replace frac with n and change number of examples per tree
-            tree = create_tree(train.sample(frac=1, replace=True), attribute_columns, target_column, None)
+            tree = create_tree(train.sample(frac=examples_per_tree, replace=True), attribute_columns, target_column, None)
             if max_nodes != -1:
                 prune_tree(tree, max_nodes, df, target_column)
             trees.append(tree)
@@ -237,6 +236,7 @@ def main():
     csv_file = ""
     target_column = ""
     test_percentage = 0.2
+    examples_per_tree = 0.25
     with open("config.json") as config_file:#sys.argv[1], 'r') as config_file: #TODO: remove hardcode
         config = json.load(config_file)
         csv_file = config["file"]
@@ -244,6 +244,7 @@ def main():
         max_nodes = config["max_nodes"] if "max_nodes" in config else -1
         do_forest = config["do_forest"] if "do_forest" in config else True
         tree_amount = config["tree_amount"] if do_forest and "tree_amount" in config else 10
+        examples_per_tree = config["examples_per_tree"] if do_forest and "examples_per_tree" in config else 0.25
         test_percentage = config["test_percentage"] if "test_percentage" in config else 0.2
 
     df = pd.read_csv(csv_file)
@@ -258,7 +259,7 @@ def main():
 
     if do_forest:
         print("Random Forest with " + max_node_str + " nodes and " + str(tree_amount) + " trees")
-        random_forest(df, attribute_columns, target_column, test_percentage, 80, tree_amount, max_nodes)
+        random_forest(df, attribute_columns, target_column, test_percentage, examples_per_tree, tree_amount, max_nodes)
     else:
         print("ID3 with " + max_node_str + " nodes")
         id3(df, attribute_columns, target_column, max_nodes, test_percentage)
