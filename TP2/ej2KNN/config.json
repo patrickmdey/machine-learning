@@ -2,5 +2,6 @@
 	"file": "reviews_sentiment.csv",
 	"k": 10,
 	"test_size": 0.2,
-	"weighted": true
+	"weighted": true,
+	"normalize": true
 }

@@ -32,7 +32,7 @@ def partition_dataset(df, partition_percentage):
 
     return partitions
 
-def classify_using_knn(df, k, test_size, weighted):
+def classify_using_knn(df, k, test_size, weighted, normalize):
     df = df[['wordcount', 'titleSentiment', 'sentimentValue', 'Star Rating']]
     df.loc[:, 'titleSentiment'] = df.loc[:, 'titleSentiment'].fillna(0)
     # TODO: mencionar por que usamos esto en fillna y capaz hacer varias pruebas CAPAZ ELIMINARLOS Y LISTO
@@ -43,8 +43,9 @@ def classify_using_knn(df, k, test_size, weighted):
     df.loc[df['titleSentiment'] == 'positive', 'titleSentiment'] = 1
     df.loc[df['titleSentiment'] == 'negative', 'titleSentiment'] = 0
 
-    scaler = MinMaxScaler()
-    df.loc[:, ['wordcount', 'titleSentiment', 'sentimentValue']] = scaler.fit_transform(df[['wordcount', 'titleSentiment', 'sentimentValue']].values)
+    if normalize:
+        scaler = MinMaxScaler()
+        df.loc[:, ['wordcount', 'titleSentiment', 'sentimentValue']] = scaler.fit_transform(df[['wordcount', 'titleSentiment', 'sentimentValue']].values)
 
     partitions = partition_dataset(df, test_size)
     knn = KNN(k)
@@ -78,13 +79,14 @@ def main():
     k = 3
     test_size = 0.2
     weighted = False
+    normalize = True
     with open("config.json") as config_file: # open(sys.argv[1], 'r') as config_file:
-
         config = json.load(config_file)
         csv_file = config["file"]
         k = config["k"]
         test_size = config["test_size"]
         weighted = config["weighted"]
+        normalize = config["normalize"]
     config_file.close()
 
     df = pd.read_csv(csv_file, sep=';')
@@ -93,7 +95,7 @@ def main():
     calculate_average_word_count(df, 1)
 
     # Ej c)
-    classify_using_knn(df, k, test_size, weighted)
+    classify_using_knn(df, k, test_size, weighted, normalize)
     
 if __name__ == "__main__":
     main()

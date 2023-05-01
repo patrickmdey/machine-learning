@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
+import sys
 
 def save_heatmap(df):
     plt.clf()
@@ -83,29 +84,18 @@ def calculate_results(df, confusion_matrix=None):
 
 
 def main():
-    file_amount = 5
-    confusion_matrix = {real_cat: {pred_cat: 0 for pred_cat in range(1, 6)} for real_cat in range(1, 6)}
+    # FIXME
 
-    #precision_per_class = [{real_cat: 0 for real_cat in range(1, 6)}] #* file_amount
+    file_amount = sys.argv[1] if len(sys.argv) > 1 else 5
     
-    #precision_per_partition = {"train": [], "test": []}
+    confusion_matrix = {real_cat: {pred_cat: 0 for pred_cat in range(1, 6)} for real_cat in range(1, 6)}
 
     precision_per_partition = [0 for _ in range(file_amount)]
 
     for partition in range(file_amount):
         df = pd.read_csv("post_processing/knn/classification" + str(partition) + ".csv")
-
         current_correct = calculate_results(df, confusion_matrix)
-        
         precision_per_partition[partition] = current_correct/len(df)
-
-
-        ###
-        #metrics = calculate_metrics(df, confusion_matrix)
-        #for key in metrics:
-        #    precision_per_class[-1][key] = metrics[key]["tp"] / (metrics[key]["tp"] + metrics[key]["fp"])
-        
-        #precision_per_class.append({real_cat: 0 for real_cat in range(1, 6)})
     
     confusion_df = pd.DataFrame(confusion_matrix)
     
@@ -119,15 +109,6 @@ def main():
 
 
     pd.DataFrame([mean_std_precision]).to_csv("out/mean_metrics.csv")
-
-    # metrics_per_class = {"mean": {cat: 0 for cat in range(1, 6)}, "std": {cat: 0 for cat in range(1, 6)}}
-    # for real_cat in range(1, 6):
-    #     metrics_per_class["mean"][real_cat] = np.mean([precision_per_class[i][real_cat] for i in range(len(precision_per_class))])
-    #     metrics_per_class["std"][real_cat] = np.std([precision_per_class[i][real_cat] for i in range(len(precision_per_class))])
-        
-    # pd.DataFrame(metrics_per_class["mean"], index=[0]).to_csv("out/mean_metrics.csv")
-    # pd.DataFrame(metrics_per_class["std"], index=[0]).to_csv("out/std_metrics.csv")
-
             
 if __name__ == "__main__":
     main()
