@@ -54,7 +54,8 @@ def main():
     # TODO: modularize
     df = df[['wordcount', 'titleSentiment', 'sentimentValue', 'Star Rating']]
     df['titleSentiment'] = df['titleSentiment'].fillna(0)
-    # TODO: mencionar por que usamos esto en fillna y capaz hacer varias pruebas
+    # TODO: mencionar por que usamos esto en fillna y capaz hacer varias pruebas CAPAZ ELIMINARLOS Y LISTO
+    # TODO: cambiar a 0.5 quizas
     df.loc[(df['titleSentiment'] == 0) & (df['Star Rating'] >= 3), 'titleSentiment'] = 'positive'
     df.loc[(df['titleSentiment'] == 0) & (df['Star Rating'] < 3), 'titleSentiment'] = 'negative'
 
@@ -75,7 +76,6 @@ def main():
 
     idx = 0
     for partition in partitions:
-        
         test = partition
         train = pd.concat([df for df in partitions if df is not partition])
         train.reset_index(drop=True, inplace=True)

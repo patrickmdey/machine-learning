@@ -143,7 +143,9 @@ def main():
 
     precision = get_metrics(method, max_nodes, partition_amount, tree_amount)
 
-    os.remove(path + "/precision_vs_nodes.csv") if os.path.exists(path + "/precision_vs_nodes.csv") else None
+    print(path + "precision_vs_nodes.csv")
+
+    os.remove(path + "precision_vs_nodes.csv") if os.path.exists(path + "precision_vs_nodes.csv") else None
     results_to_csv(precision, method, max_nodes, partition_amount, tree_amount)
             
 if __name__ == "__main__":
