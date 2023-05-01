@@ -36,7 +36,7 @@ def main():
     
     df = pd.read_csv(path)
 
-    get_precision_graph(df.tail(-1), method, partition_amount, tree_amount)
+    get_precision_graph(df, method, partition_amount, tree_amount)
 
 if __name__ == "__main__":
     main()

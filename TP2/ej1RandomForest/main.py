@@ -210,6 +210,8 @@ def id3(df, columns, target_column, max_nodes, test_percentage):
         test.reset_index(drop=True, inplace=True)
         root = create_tree(train, columns, target_column, None)
 
+        print("total_nodes: " + str(count_nodes(root, target_column)))
+
         node_path = "post_processing/id3/" + str(partitions_len) + "/"
         os.mkdir(node_path) if not os.path.exists(node_path) else None
         node_path += max_nodes_str + "_nodes"
@@ -252,6 +254,7 @@ def main():
 
     attribute_columns = df.loc[:, df.columns != target_column].columns.tolist()
     max_node_str = "all" if max_nodes == -1 else str(max_nodes)
+
 
     if do_forest:
         print("Random Forest with " + max_node_str + " nodes and " + str(tree_amount) + " trees")

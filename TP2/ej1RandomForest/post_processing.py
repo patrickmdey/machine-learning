@@ -4,8 +4,11 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import sys
 import os
+import warnings
 
 def save_heatmap(df,method, partition_amount, tree_amount=None):
+    # Silence the warning
+    warnings.filterwarnings('ignore', message='FixedFormatter should only be used together with FixedLocator cbar.ax.set_yticklabels(tick_labels)')
     plt.clf()
     cmap = sns.color_palette("light:b", as_cmap=True, n_colors=5)
     
@@ -73,13 +76,17 @@ def get_metrics(method, max_nodes,partition_amount, tree_amount=None):
 
     pre_path += (max_nodes if max_nodes != "-1" else "no_max") + "_nodes/"
 
+    # print(max_nodes, pre_path)
+
     precision_per_partition = {"train": [], "test": []}
 
     for partition in range(partition_amount):
         # TODO: agregarle tambien a random forest el str partition amount
         post_path = ("_"+ (str(partition) + "_" + str(tree_amount) + "_trees") if method == "random_forest" 
                      else str(partition)) + ".csv"
-
+        
+        # print(post_path)
+        
         test_df = pd.read_csv(pre_path + "test/classification" + post_path)
         train_df = pd.read_csv(pre_path + "train/classification" + post_path)
 
@@ -143,10 +150,10 @@ def main():
 
     precision = get_metrics(method, max_nodes, partition_amount, tree_amount)
 
-    print(path + "precision_vs_nodes.csv")
-
-    os.remove(path + "precision_vs_nodes.csv") if os.path.exists(path + "precision_vs_nodes.csv") else None
+    # print(path)
+    if max_nodes == "-1":
+        os.remove(path + "precision_vs_nodes.csv") if os.path.exists(path + "precision_vs_nodes.csv") else None
     results_to_csv(precision, method, max_nodes, partition_amount, tree_amount)
-            
+
 if __name__ == "__main__":
     main()

@@ -32,28 +32,9 @@ def partition_dataset(df, partition_percentage):
 
     return partitions
 
-
-def main():
-    csv_file = ""
-    k = 3
-    test_size = 0.2
-    weighted = False
-    with open("config.json") as config_file: # open(sys.argv[1], 'r') as config_file:
-        config = json.load(config_file)
-        csv_file = config["file"]
-        k = config["k"]
-        test_size = config["test_size"]
-        weighted = config["weighted"]
-
-    df = pd.read_csv(csv_file, sep=';')
-
-    # Ej a)
-    calculate_average_word_count(df, 1)
-
-    # Ej c)
-    # TODO: modularize
+def classify_using_knn(df, k, test_size, weighted):
     df = df[['wordcount', 'titleSentiment', 'sentimentValue', 'Star Rating']]
-    df['titleSentiment'] = df['titleSentiment'].fillna(0)
+    df.loc[:, 'titleSentiment'] = df.loc[:, 'titleSentiment'].fillna(0)
     # TODO: mencionar por que usamos esto en fillna y capaz hacer varias pruebas CAPAZ ELIMINARLOS Y LISTO
     # TODO: cambiar a 0.5 quizas
     df.loc[(df['titleSentiment'] == 0) & (df['Star Rating'] >= 3), 'titleSentiment'] = 'positive'
@@ -62,14 +43,8 @@ def main():
     df.loc[df['titleSentiment'] == 'positive', 'titleSentiment'] = 1
     df.loc[df['titleSentiment'] == 'negative', 'titleSentiment'] = 0
 
-    # TODO: check normalization
-    # df_without_stars = df.loc[:, df.columns != 'Star Rating']
-    # df_without_stars=(df_without_stars - df_without_stars.mean()) / df_without_stars.std()
-    # df = pd.concat([df_without_stars, df['Star Rating']], axis=1)
-
-    # TODO: check
     scaler = MinMaxScaler()
-    df[['wordcount', 'titleSentiment', 'sentimentValue']] = scaler.fit_transform(df[['wordcount', 'titleSentiment', 'sentimentValue']].values)
+    df.loc[:, ['wordcount', 'titleSentiment', 'sentimentValue']] = scaler.fit_transform(df[['wordcount', 'titleSentiment', 'sentimentValue']].values)
 
     partitions = partition_dataset(df, test_size)
     knn = KNN(k)
@@ -97,6 +72,28 @@ def main():
 
         df_to_csv.to_csv("post_processing/knn/classification" + str(idx) + ".csv")
         idx += 1
+
+def main():
+    csv_file = ""
+    k = 3
+    test_size = 0.2
+    weighted = False
+    with open("config.json") as config_file: # open(sys.argv[1], 'r') as config_file:
+
+        config = json.load(config_file)
+        csv_file = config["file"]
+        k = config["k"]
+        test_size = config["test_size"]
+        weighted = config["weighted"]
+    config_file.close()
+
+    df = pd.read_csv(csv_file, sep=';')
+
+    # Ej a)
+    calculate_average_word_count(df, 1)
+
+    # Ej c)
+    classify_using_knn(df, k, test_size, weighted)
     
 if __name__ == "__main__":
     main()

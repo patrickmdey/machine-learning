@@ -1,6 +1,6 @@
 {"target": "Creditability",
-                "file": "./german_credit.csv",
-                "max_nodes": 50,
-                "test_percentage": 0.1,
-                "do_forest": false
-                }
+                    "file": "./german_credit.csv",
+                    "test_percentage": 0.2,
+                    "max_nodes": -1,
+                    "do_forest": false
+                    }
