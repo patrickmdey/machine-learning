@@ -1,8 +1,8 @@
 {
 	"file": "reviews_sentiment.csv",
-	"k": 8,
-	"test_size": 0.2,
-	"weighted": true,
+	"k": 10,
+	"test_size": 0.1,
+	"weighted": false,
 	"normalize": true,
-	"remove_missing": true
+	"remove_missing": false
 }

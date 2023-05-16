@@ -86,7 +86,7 @@ def calculate_results(df, confusion_matrix=None):
 def main():
     # FIXME
 
-    file_amount = sys.argv[1] if len(sys.argv) > 1 else 5
+    file_amount = 10
     
     confusion_matrix = {real_cat: {pred_cat: 0 for pred_cat in range(1, 6)} for real_cat in range(1, 6)}
 

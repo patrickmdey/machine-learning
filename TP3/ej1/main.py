@@ -6,19 +6,24 @@ from SVM import SVM
 from utils import partition_dataset
 
 def plot_preceptron(X, y, perceptron):
+    plt.clf()
     line_x = np.linspace(0, 1, 2)
     # w1*x1 + w2*x2 + b = 0 => -(w1*x1 + b)/w2 = x2
-    line_y = -(line_x * perceptron.weights[0] + perceptron.bias)/perceptron.weights[1]
+    line_y = -(line_x * perceptron.weights[0] + perceptron.weights[2])/perceptron.weights[1]
 
     plt.plot(line_x, line_y)
     plt.scatter(X[:, 0], X[:, 1], color=['red' if c == -1 else 'green' for c in y])
     plt.xlim([0, 1])
     plt.ylim([0, 1])
     plt.title('Perceptron')
+    plt.xlabel('x')
+    plt.ylabel('y')
     plt.legend(['Decision boundary', 'Instance'])
-    plt.show()
+    # plt.show()
+    plt.savefig('perceptron.png')
 
 def plot_svm(X, y, r, svm):
+    plt.clf()
     line_x = np.linspace(0, 1, 2)
     
     # w1*x1 + w2*x2 + b = 0 => -(w1*x1 + b)/w2 = x2
@@ -32,8 +37,10 @@ def plot_svm(X, y, r, svm):
     # plt.xlim([0, 1])
     # plt.ylim([0, 1])
     plt.legend(['Instance','Decision boundary', 'Margin'])
+    plt.xlabel('x')
+    plt.ylabel('y')
     plt.title('SVM')
-    plt.show()
+    plt.savefig('svm.png')
 
 
 def random_points_within_range(x_min, x_max, y_min, y_max, n):
@@ -69,11 +76,13 @@ def run_perceptron(df):
     perceptron = Perceptron(2)
     perceptron.train(X, y)
     print("Perceptron:", perceptron.weights)
+    for i in range(len(X)):
+        prediction = perceptron.predict(np.append(X[i], [1]))
+        # print("Prediction: " + str(prediction) + ", Real: " + str(y[i]))
     plot_preceptron(X, y, perceptron)
 
 
 def run_svm(df, max_c, c_rate, test_pctg, epochs=1000, learning_rate=0.01):
-
     c_precisions = []
     for c in range(1, max_c, c_rate):
         precisions = []
@@ -130,14 +139,7 @@ if __name__ == '__main__':
     df = pd.DataFrame(data, columns=["x", "y", "class"])
     df.to_csv("TP3-1.csv", index=False)
 
-    # X = data[:, :2] # X = all rows, first two columns
-    # print(X)
-    # X = df.loc[:, ['x', 'y']]
-    # print(X.values)
-    # y = data[:, -1] # y = all rows, last column
-    # y = df.loc[:, ['class']]
-
-    # run_perceptron(df)
+    run_perceptron(df)
 
     test_pctg = 0.1
 
@@ -146,6 +148,6 @@ if __name__ == '__main__':
     epochs = 10000
     learning_rate = 0.001
 
-    run_svm(df, max_c, c_rate, test_pctg, epochs, learning_rate)
+    # run_svm(df, max_c, c_rate, test_pctg, epochs, learning_rate)
 
     
