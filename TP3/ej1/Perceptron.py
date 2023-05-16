@@ -12,7 +12,7 @@ class Perceptron:
         return np.where(z >= 0, 1, -1)
 
     def train(self, X, y, epochs=100, learning_rate=0.1):
-        for epoch in range(epochs):
+        for _ in range(epochs):
             y_pred = self.predict(X)
 
             error = y - y_pred

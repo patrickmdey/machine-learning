@@ -1,6 +1,39 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from TP3.ej1.Perceptron import Perceptron
+import pandas as pd
+from Perceptron import Perceptron
+from SVM import SVM
+from utils import partition_dataset
+
+def plot_preceptron(X, y, perceptron):
+    line_x = np.linspace(0, 1, 2)
+    # w1*x1 + w2*x2 + b = 0 => -(w1*x1 + b)/w2 = x2
+    line_y = -(line_x * perceptron.weights[0] + perceptron.bias)/perceptron.weights[1]
+
+    plt.plot(line_x, line_y)
+    plt.scatter(X[:, 0], X[:, 1], color=['red' if c == -1 else 'green' for c in y])
+    plt.xlim([0, 1])
+    plt.ylim([0, 1])
+    plt.title('Perceptron')
+    plt.legend(['Decision boundary', 'Instance'])
+    plt.show()
+
+def plot_svm(X, y, r, svm):
+    line_x = np.linspace(0, 1, 2)
+    
+    # w1*x1 + w2*x2 + b = 0 => -(w1*x1 + b)/w2 = x2
+    line_y = -(line_x * svm.weights[0] + svm.bias)/svm.weights[1]
+    line_y_up = -(line_x * svm.weights[0] + svm.bias + r)/svm.weights[1]
+    line_y_down = -(line_x * svm.weights[0] + svm.bias - r)/svm.weights[1]
+    plt.scatter(X[:, 0], X[:, 1], color=['red' if c == -1 else 'green' for c in y])
+    plt.plot(line_x, line_y, color='black')
+    # plt.plot(line_x, line_y_up, linestyle='dashed', color='blue')
+    # plt.plot(line_x, line_y_down, linestyle='dashed', color='blue')
+    # plt.xlim([0, 1])
+    # plt.ylim([0, 1])
+    plt.legend(['Instance','Decision boundary', 'Margin'])
+    plt.title('SVM')
+    plt.show()
 
 
 def random_points_within_range(x_min, x_max, y_min, y_max, n):
@@ -29,8 +62,64 @@ def random_points_within_range(x_min, x_max, y_min, y_max, n):
 
     return np.array(data), (m, b)
 
+def run_perceptron(df):
+    X = df.loc[:, ['x', 'y']].values
+    y = df.loc[:, ['class']].values.ravel()
+
+    perceptron = Perceptron(2)
+    perceptron.train(X, y)
+    print("Perceptron:", perceptron.weights)
+    plot_preceptron(X, y, perceptron)
+
+
+def run_svm(df, max_c, c_rate, test_pctg, epochs=1000, learning_rate=0.01):
+
+    c_precisions = []
+    for c in range(1, max_c, c_rate):
+        precisions = []
+        partitions = partition_dataset(df, test_pctg)    
+        for idx, partition in enumerate(partitions):
+            test = partition
+            train = pd.concat([df for df in partitions if df is not partition])
+
+            train_X = train.loc[:, ['x', 'y']].values
+            train_y = train.loc[:, ['class']].values.ravel()
+            
+            svm = SVM(2)
+            svm.train(train_X, train_y, c, learning_rate, epochs)
+
+            test_X = test.loc[:, ['x', 'y']].values
+            test_y = test.loc[:, ['class']].values.ravel()
+
+            correct = 0
+            for idx, x in enumerate(test_X):
+                prediction = svm.predict(x)
+                if prediction == test_y[idx]:
+                    correct += 1
+            
+            precisions.append(correct / len(test_X))
+        c_precisions.append({"mean": np.mean(precisions), "std": np.std(precisions)})
+    
+    optimal_c = np.argmax([c["mean"] for c in c_precisions]) + 1
+
+    X = df.loc[:, ['x', 'y']].values
+    y = df.loc[:, ['class']].values.ravel()
+    svm = SVM(2)
+    svm.train(X, y, optimal_c, learning_rate, epochs)
+    r = svm.calculate_margin()
+
+    print("SVM:", svm.weights)
+    print("Margin:", r)
+    plot_svm(X, y, r, svm)
+
+    for idx, x in enumerate(X):
+        prediction = svm.predict(x)
+        y[idx] = prediction
+    
+    plot_svm(X, y, r, svm)
 
 if __name__ == '__main__':
+
     x_min = 0
     x_max = 1
     y_min = 0
@@ -38,24 +127,25 @@ if __name__ == '__main__':
     n = 30
     data, line = random_points_within_range(x_min, x_max, y_min, y_max, n)
 
-    X = data[:, :2]
-    y = data[:, -1]
-    perceptron = Perceptron(2)
-    perceptron.train(X, y)
+    df = pd.DataFrame(data, columns=["x", "y", "class"])
+    df.to_csv("TP3-1.csv", index=False)
 
-    for idx, x in enumerate(X):
-        prediction = perceptron.predict(x)
-        if prediction == y[idx]:
-            print("nice")
-        else:
-            print("not nice")
+    # X = data[:, :2] # X = all rows, first two columns
+    # print(X)
+    # X = df.loc[:, ['x', 'y']]
+    # print(X.values)
+    # y = data[:, -1] # y = all rows, last column
+    # y = df.loc[:, ['class']]
 
-    line_x = np.linspace(0, 1, 2)
-    # w1*x1 + w2*x2 + b = 0 => -(w1*x1 + b)/w2 = x2
-    line_y = -(line_x * perceptron.weights[0] + perceptron.bias)/perceptron.weights[1]
+    # run_perceptron(df)
 
-    plt.scatter(X[:, 0], X[:, 1], color=['red' if c == -1 else 'green' for c in y])
-    plt.plot(line_x, line_y)
-    plt.xlim([0, 1])
-    plt.ylim([0, 1])
-    plt.show()
+    test_pctg = 0.1
+
+    max_c = 250
+    c_rate = 50
+    epochs = 10000
+    learning_rate = 0.001
+
+    run_svm(df, max_c, c_rate, test_pctg, epochs, learning_rate)
+
+    
