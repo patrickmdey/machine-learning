@@ -1,0 +1,7 @@
+{
+	"generate": true,
+	"file_name": "TP3-1",
+    "point_number": 30,
+	"method": "perceptron",
+	"learning_rate": 0.1
+}
