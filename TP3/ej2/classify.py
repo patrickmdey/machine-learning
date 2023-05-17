@@ -6,11 +6,11 @@ from PIL import Image
 
 def map_array(n):
     if n == -1:
-        return [255, 0, 0]
+        return [0, 153, 255]
     if n == 0:
-        return [0, 255, 0]
+        return [0, 102, 0]
     if n == 1:
-        return [0, 0, 255]
+        return [102, 51, 0]
 
 
 if __name__ == '__main__':
@@ -25,11 +25,12 @@ if __name__ == '__main__':
 
     classified = clf.predict(full_img)
     mapped = np.transpose(np.asarray(list(map(map_array, classified))))
-    r = mapped[0].reshape(pixels.shape[0:2])
-    g = mapped[1].reshape(pixels.shape[0:2])
-    b = mapped[2].reshape(pixels.shape[0:2])
+    shape = pixels.shape[0:2] + tuple([1])
+    r = mapped[0].reshape(shape)
+    g = mapped[1].reshape(shape)
+    b = mapped[2].reshape(shape)
 
-    result = np.concatenate(r, g, b, axis=2)
+    result = np.concatenate((r, g, b), axis=2)
 
     plt.imshow(result)
     plt.show()
