@@ -7,24 +7,92 @@ from utils import *
 import json
 
 
+def optimize_perceptron(X, y, weights):
+    A = weights[0]
+    B = weights[1]
+    C = weights[2]
+
+    upper_points = X[y == 1]
+    lower_points = X[y == -1]
+
+    upper_distances = np.abs(
+        A * upper_points[:, 0] + B * upper_points[:, 1] + C) / np.sqrt(A**2 + B**2)
+    lower_distances = np.abs(
+        A * lower_points[:, 0] + B * lower_points[:, 1] + C) / np.sqrt(A**2 + B**2)
+
+    upper_points_i = np.argsort(upper_distances)[:1]
+    lower_points_i = np.argsort(lower_distances)[:2]
+
+    upper_points = upper_points[upper_points_i]
+    lower_points = lower_points[lower_points_i]
+
+    lower_midpoint = (lower_points[0] + lower_points[1]) / 2
+
+    line_x = np.linspace(0, 1, 2)
+
+    # line_y is between mid point and upper point
+    optimal_point = (upper_points[0] + lower_midpoint) / 2
+
+    b = optimal_point[1] - A * optimal_point[0]
+
+    original_slope = -A/B
+    b = optimal_point[1] + A * optimal_point[0] / B
+
+    line_y = - (A * line_x)/B + b
+
+    return line_y, upper_points, lower_points, optimal_point
+
+
 def plot_preceptron(X, y, weights, epochs, l_rate):
     plt.clf()
     line_x = np.linspace(0, 1, 2)
     # w1*x1 + w2*x2 + b = 0 => -(w1*x1 + b)/w2 = x2
     line_y = -(line_x * weights[0] + weights[2])/weights[1]
 
-    plt.plot(line_x, line_y)
-    plt.scatter(X[:, 0], X[:, 1], color=[
-                'red' if c == -1 else 'green' for c in y])
+    optimal_line_y, upper_points, lower_points, optimal_point = optimize_perceptron(
+        X, y, weights)
+    boundry_line_plt = plt.plot(line_x, line_y, color='blue')
+
+    to_remove_idx = []
+    for idx, point in enumerate(X):
+        if point in upper_points or point in lower_points:
+            to_remove_idx.append(idx)
+
+    X = np.delete(X, to_remove_idx, axis=0)
+    y = np.delete(y, to_remove_idx, axis=0)
+
+    instances_plt = plt.scatter(X[:, 0], X[:, 1], color=[
+        'red' if c == -1 else 'green' for c in y])
+
+    optimal_point_plt = plt.scatter(
+        optimal_point[0], optimal_point[1], color='black')
+    lower_middle_point = (lower_points[0] + lower_points[1]) / 2
+    middle_point_plt = plt.scatter(
+        lower_middle_point[0], lower_middle_point[1], color='black')
+
+    optimal_boundry_plt = plt.plot(
+        line_x, optimal_line_y, color='purple', linestyle='dashed')
+    select_up_plt = plt.scatter(
+        upper_points[:, 0], upper_points[:, 1], color='black')
+    select_low_plt = plt.scatter(
+        lower_points[:, 0], lower_points[:, 1], color='orange')
+
     plt.xlim([0, 1])
     plt.ylim([0, 1])
     plt.title('Perceptron con ' + str(epochs) +
               ' epochs y learning rate ' + str(l_rate))
     plt.xlabel('x')
     plt.ylabel('y')
-    plt.legend(['Decision boundary', 'Instance'], loc='upper right')
+
+    #TODO: fix legend
+
+    # plt.legend([boundry_line_plt, instances_plt, optimal_boundry_plt, optimal_point_plt, middle_point_plt],
+    #            ['Decision boundary', 'Instances', 'Optimum', 'Optimum midway point', 'mid point'], loc='upper right')
+
     path = "out/perceptron/"+str(epochs)+"_epochs_" + \
         str(l_rate).replace("0.", "p") + "_lrate"
+
+    plt.tight_layout()
     plt.savefig(path+'.png')
 
 
@@ -50,6 +118,7 @@ def plot_svm(X, y, r, weights, b, epochs, l_rate):
               ' epochs y learning rate ' + str(l_rate))
     path = "out/svm/"+str(epochs)+"_epochs_" + \
         str(l_rate).replace("0.", "p") + "_lrate"
+    plt.tight_layout()
     plt.savefig(path + '.png')
 
 
