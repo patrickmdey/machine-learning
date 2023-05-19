@@ -20,25 +20,19 @@ def optimize_perceptron(X, y, weights):
     lower_distances = np.abs(
         A * lower_points[:, 0] + B * lower_points[:, 1] + C) / np.sqrt(A**2 + B**2)
 
-    upper_points_i = np.argsort(upper_distances)[:1]
-    lower_points_i = np.argsort(lower_distances)[:2]
-
-    upper_points = upper_points[upper_points_i]
-    lower_points = lower_points[lower_points_i]
+    upper_points = upper_points[np.argsort(upper_distances)[:1]]
+    lower_points = lower_points[np.argsort(lower_distances)[:2]]
 
     lower_midpoint = (lower_points[0] + lower_points[1]) / 2
 
     line_x = np.linspace(0, 1, 2)
 
-    # line_y is between mid point and upper point
     optimal_point = (upper_points[0] + lower_midpoint) / 2
 
-    b = optimal_point[1] - A * optimal_point[0]
+    m = (lower_points[1][1] - lower_points[0][1]) / (lower_points[1][0] - lower_points[0][0])
+    b = optimal_point[1] - m * optimal_point[0]
 
-    original_slope = -A/B
-    b = optimal_point[1] + A * optimal_point[0] / B
-
-    line_y = - (A * line_x)/B + b
+    line_y = m * line_x + b
 
     return line_y, upper_points, lower_points, optimal_point
 
@@ -73,7 +67,7 @@ def plot_preceptron(X, y, weights, epochs, l_rate):
     optimal_boundry_plt = plt.plot(
         line_x, optimal_line_y, color='purple', linestyle='dashed')
     select_up_plt = plt.scatter(
-        upper_points[:, 0], upper_points[:, 1], color='black')
+        upper_points[:, 0], upper_points[:, 1], color='purple')
     select_low_plt = plt.scatter(
         lower_points[:, 0], lower_points[:, 1], color='orange')
 
@@ -84,7 +78,7 @@ def plot_preceptron(X, y, weights, epochs, l_rate):
     plt.xlabel('x')
     plt.ylabel('y')
 
-    #TODO: fix legend
+    # TODO: fix legend
 
     # plt.legend([boundry_line_plt, instances_plt, optimal_boundry_plt, optimal_point_plt, middle_point_plt],
     #            ['Decision boundary', 'Instances', 'Optimum', 'Optimum midway point', 'mid point'], loc='upper right')
