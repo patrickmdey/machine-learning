@@ -29,7 +29,8 @@ def optimize_perceptron(X, y, weights):
 
     optimal_point = (upper_points[0] + lower_midpoint) / 2
 
-    m = (lower_points[1][1] - lower_points[0][1]) / (lower_points[1][0] - lower_points[0][0])
+    m = (lower_points[1][1] - lower_points[0][1]) / \
+        (lower_points[1][0] - lower_points[0][0])
     b = optimal_point[1] - m * optimal_point[0]
 
     line_y = m * line_x + b
@@ -37,54 +38,51 @@ def optimize_perceptron(X, y, weights):
     return line_y, upper_points, lower_points, optimal_point
 
 
-def plot_preceptron(X, y, weights, epochs, l_rate):
+def plot_preceptron(X, y, weights, epochs, l_rate, plot_optimal=False):
     plt.clf()
     line_x = np.linspace(0, 1, 2)
     # w1*x1 + w2*x2 + b = 0 => -(w1*x1 + b)/w2 = x2
     line_y = -(line_x * weights[0] + weights[2])/weights[1]
 
-    optimal_line_y, upper_points, lower_points, optimal_point = optimize_perceptron(
-        X, y, weights)
-    boundry_line_plt = plt.plot(line_x, line_y, color='blue')
-
-    to_remove_idx = []
-    for idx, point in enumerate(X):
-        if point in upper_points or point in lower_points:
-            to_remove_idx.append(idx)
-
-    X = np.delete(X, to_remove_idx, axis=0)
-    y = np.delete(y, to_remove_idx, axis=0)
-
-    instances_plt = plt.scatter(X[:, 0], X[:, 1], color=[
-        'red' if c == -1 else 'green' for c in y])
-
-    optimal_point_plt = plt.scatter(
-        optimal_point[0], optimal_point[1], color='black')
-    lower_middle_point = (lower_points[0] + lower_points[1]) / 2
-    middle_point_plt = plt.scatter(
-        lower_middle_point[0], lower_middle_point[1], color='black')
-
-    optimal_boundry_plt = plt.plot(
-        line_x, optimal_line_y, color='purple', linestyle='dashed')
-    select_up_plt = plt.scatter(
-        upper_points[:, 0], upper_points[:, 1], color='purple')
-    select_low_plt = plt.scatter(
-        lower_points[:, 0], lower_points[:, 1], color='orange')
+    plt.plot(line_x, line_y, color='blue')
 
     plt.xlim([0, 1])
     plt.ylim([0, 1])
     plt.title('Perceptron con ' + str(epochs) +
-              ' epochs y learning rate ' + str(l_rate))
+              ' épocas y learning rate ' + str(l_rate))
     plt.xlabel('x')
     plt.ylabel('y')
 
-    # TODO: fix legend
+    if plot_optimal:
+        optimal_line_y, upper_points, lower_points, optimal_point = optimize_perceptron(
+            X, y, weights)
 
-    # plt.legend([boundry_line_plt, instances_plt, optimal_boundry_plt, optimal_point_plt, middle_point_plt],
-    #            ['Decision boundary', 'Instances', 'Optimum', 'Optimum midway point', 'mid point'], loc='upper right')
+        to_remove_idx = []
+        for idx, point in enumerate(X):
+            if point in upper_points or point in lower_points:
+                to_remove_idx.append(idx)
+
+        X = np.delete(X, to_remove_idx, axis=0)
+        y = np.delete(y, to_remove_idx, axis=0)
+        plt.scatter(optimal_point[0], optimal_point[1],
+                    color='mediumpurple', marker="^")
+        lower_middle_point = (lower_points[0] + lower_points[1]) / 2
+        plt.scatter(lower_middle_point[0],
+                    lower_middle_point[1], color='mediumpurple', marker="^")  # lower middle point
+
+        plt.plot(line_x, optimal_line_y,
+                 color='mediumpurple', linestyle='dashed')
+        plt.scatter(upper_points[:, 0], upper_points[:,
+                    1], color='lightblue')  # upper point
+        plt.scatter(lower_points[:, 0], lower_points[:,
+                    1], color='pink')  # lower points
+
+    plt.scatter(X[:, 0], X[:, 1], color=[
+                'red' if c == -1 else 'green' for c in y])
 
     path = "out/perceptron/"+str(epochs)+"_epochs_" + \
-        str(l_rate).replace("0.", "p") + "_lrate"
+        str(l_rate).replace("0.", "p") + "_lrate" + \
+        ("_optimal" if plot_optimal else "")
 
     plt.tight_layout()
     plt.savefig(path+'.png')
@@ -123,7 +121,8 @@ def run_perceptron(df, epochs, learning_rate):
     perceptron = Perceptron(2)
     error, weights = perceptron.train(X, y, epochs, learning_rate)
     print("Perceptron:", weights)
-    plot_preceptron(X, y, weights, epochs, learning_rate)
+    plot_preceptron(X, y, weights, epochs, learning_rate, False)
+    plot_preceptron(X, y, weights, epochs, learning_rate, True)
 
 
 def run_svm(df, max_c, c_rate, test_pctg, epochs=1000, learning_rate=0.01):
