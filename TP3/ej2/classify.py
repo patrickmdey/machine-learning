@@ -4,6 +4,9 @@ import pandas as pd
 from sklearn import svm
 from PIL import Image
 
+PATH = "out/"
+
+
 def map_array(n):
     if n == -1:
         return [0, 153, 255]
@@ -19,7 +22,9 @@ if __name__ == '__main__':
     clf = svm.SVC(C=1.0, kernel='rbf')
     clf.fit(df[['r', 'g', 'b']], df['class'])
 
-    with Image.open("images/cow.jpg") as img:
+    file_name = "cow_f"
+
+    with Image.open(f"images/{file_name}.jpg") as img:
         pixels = np.asarray(img)
         full_img = pixels.reshape(pixels.shape[0] * pixels.shape[1], pixels.shape[2])
 
@@ -33,4 +38,5 @@ if __name__ == '__main__':
     result = np.concatenate((r, g, b), axis=2)
 
     plt.imshow(result)
+    plt.savefig(PATH + f'{file_name}.png')
     plt.show()

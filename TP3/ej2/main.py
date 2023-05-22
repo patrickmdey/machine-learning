@@ -1,11 +1,16 @@
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
 from PIL import Image
 from sklearn import svm
+from sklearn.metrics import confusion_matrix
 
 CIELO_CLASS = -1
 PASTO_CLASS = 0
 VACA_CLASS = 1
+
+PATH = "out/"
 
 
 def build_dataset():
@@ -59,6 +64,27 @@ def partition_dataset(df, partition_percentage):
     return partitions
 
 
+def save_heatmap(df, file_name):
+    plt.clf()
+    cmap = sns.color_palette("light:b", as_cmap=True, n_colors=5)
+
+    ax = sns.heatmap(df, cmap=cmap,
+                     annot=True, fmt=".2%")
+
+    cbar = ax.collections[0].colorbar
+    tick_labels = cbar.ax.get_yticklabels()
+    tick_values = cbar.get_ticks()
+    for i, tick_label in enumerate(tick_labels):
+        tick_label.set_text(f"{int(tick_values[i] * 100)}%")
+    cbar.ax.set_yticklabels(tick_labels)
+
+    title = "Matriz de confusión"
+    ax.set_title(title, fontsize=7, pad=10)
+    plt.tight_layout()
+
+    plt.savefig(PATH + f'{file_name}.png')
+
+
 if __name__ == '__main__':
     df = build_dataset()
 
@@ -70,18 +96,24 @@ if __name__ == '__main__':
     best = {}
     kernels = ['linear', 'poly', 'rbf', 'sigmoid']
     step = 0.1
-    c = 1.0
-    # for c in np.arange(0.1, 2.0 + step, step):
-    for kernel in kernels:
-        print("C:", c)
-        print("Kernel:", kernel)
-        clf = svm.SVC(C=c, kernel=kernel)
-        clf.fit(train[['r', 'g', 'b']], train['class'])
-        accuracy = clf.score(test[['r', 'g', 'b']], test['class'])
-        if not best or best['accuracy'] < accuracy:
-            best['accuracy'] = accuracy
-            best['c'] = c
-            best['kernel'] = kernel
-            best['clf'] = clf
+    c = 0.1
+    for c in np.arange(0.1, 2.0 + step, step):
+        for kernel in kernels:
+            print("C:", c)
+            print("Kernel:", kernel)
+            clf = svm.SVC(C=c, kernel=kernel)
+            clf.fit(train[['r', 'g', 'b']], train['class'])
+            y_pred = clf.predict(test[['r', 'g', 'b']])
+
+            cm = confusion_matrix(test['class'], y_pred)
+            cm = (cm.T / cm.sum(axis=1)).T  # Divide rows by sum of row
+            save_heatmap(cm, f'svm_{kernel}_{c}')
+
+            accuracy = (cm.diagonal().sum()) / cm.sum()
+            if not best or best['accuracy'] < accuracy:
+                best['accuracy'] = accuracy
+                best['c'] = c
+                best['kernel'] = kernel
+                best['clf'] = clf
 
     print(best)
