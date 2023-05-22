@@ -64,12 +64,12 @@ def partition_dataset(df, partition_percentage):
     return partitions
 
 
-def save_heatmap(df, file_name):
+def save_heatmap(df, kernel, c):
     plt.clf()
     cmap = sns.color_palette("light:b", as_cmap=True, n_colors=5)
 
     ax = sns.heatmap(df, cmap=cmap,
-                     annot=True, fmt=".2%")
+                     annot=True, fmt=".2%", xticklabels=[-1, 0, 1], yticklabels=[-1, 0, 1])
 
     cbar = ax.collections[0].colorbar
     tick_labels = cbar.ax.get_yticklabels()
@@ -78,10 +78,11 @@ def save_heatmap(df, file_name):
         tick_label.set_text(f"{int(tick_values[i] * 100)}%")
     cbar.ax.set_yticklabels(tick_labels)
 
-    title = "Matriz de confusión"
+    title = "Matriz de confusión C=" + str(c) + " Kernel=" + kernel 
     ax.set_title(title, fontsize=7, pad=10)
     plt.tight_layout()
 
+    file_name = f'svm_{kernel}_{c}'
     plt.savefig(PATH + f'{file_name}.png')
 
 
@@ -97,6 +98,11 @@ if __name__ == '__main__':
     kernels = ['linear', 'poly', 'rbf', 'sigmoid']
     step = 0.1
     c = 0.1
+
+    #TODO:
+    # Esto mandarlo a un metodo que sea encontrar mejor c y mejor kernel
+    # Hacer un metodo aparte donde haces k-cross con cada metodo y cada c
+    # Eso lo vas pasando cmo hicimos en los tps anteriores
     for c in np.arange(0.1, 2.0 + step, step):
         for kernel in kernels:
             print("C:", c)
@@ -107,7 +113,7 @@ if __name__ == '__main__':
 
             cm = confusion_matrix(test['class'], y_pred)
             cm = (cm.T / cm.sum(axis=1)).T  # Divide rows by sum of row
-            save_heatmap(cm, f'svm_{kernel}_{c}')
+            save_heatmap(cm,kernel, c)
 
             accuracy = (cm.diagonal().sum()) / cm.sum()
             if not best or best['accuracy'] < accuracy:
