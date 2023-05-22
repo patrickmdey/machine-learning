@@ -185,7 +185,7 @@ if __name__ == '__main__':
 
         if generate:
             data, line = random_points_within_range(
-                x_min, x_max, y_min, y_max, point_amount)
+                x_min, x_max, y_min, y_max, point_amount, 0.05)
             df = pd.DataFrame(data, columns=["x", "y", "class"])
             df.to_csv(file_name+".csv", index=False)
             line_df = pd.DataFrame([line], columns=["m", "b"])
