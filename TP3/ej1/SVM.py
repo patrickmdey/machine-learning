@@ -4,7 +4,6 @@ import numpy as np
 class SVM:
     def __init__(self, input_dim):
         self.input_dim = input_dim
-        # self.weights = np.zeros(input_dim)
         self.weights = np.random.uniform(low=-0.5, high=0.5, size=input_dim)
         self.b = 0.0
 

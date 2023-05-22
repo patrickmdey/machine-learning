@@ -4,7 +4,6 @@ import numpy as np
 class Perceptron:
     def __init__(self, input_dim):
         self.input_dim = input_dim
-        # self.weights = np.zeros(input_dim + 1)
         self.weights = np.random.uniform(low=-0.5, high=0.5, size=input_dim+1)
 
     def predict(self, weights, train_example):

@@ -7,6 +7,7 @@ file_name = "TP3-1"
 point_amount = 30
 
 if len(sys.argv) > 1:
+    print("TRUE", str(sys.argv[1]))
     point_amount = int(sys.argv[1])
 
 data, line = random_points_within_range(x_min, x_max, y_min, y_max, point_amount)

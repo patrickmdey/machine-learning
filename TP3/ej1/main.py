@@ -53,6 +53,8 @@ def plot_preceptron(X, y, weights, epochs, l_rate, plot_optimal=False):
     plt.xlabel('x')
     plt.ylabel('y')
 
+
+    point_amount = len(y)
     if plot_optimal:
         optimal_line_y, upper_points, lower_points, optimal_point = optimize_perceptron(
             X, y, weights)
@@ -77,12 +79,17 @@ def plot_preceptron(X, y, weights, epochs, l_rate, plot_optimal=False):
         plt.scatter(lower_points[:, 0], lower_points[:,
                     1], color='pink')  # lower points
 
+        point_amount = len(y) +3
+
     plt.scatter(X[:, 0], X[:, 1], color=[
                 'red' if c == -1 else 'green' for c in y])
 
-    path = "out/perceptron/"+str(epochs)+"_epochs_" + \
+
+    path = "out/perceptron/"+str(point_amount)+"_points_"+str(epochs)+"_epochs_" + \
         str(l_rate).replace("0.", "p") + "_lrate" + \
         ("_optimal" if plot_optimal else "")
+
+    # print(path)
 
     plt.tight_layout()
     plt.savefig(path+'.png')
@@ -108,7 +115,8 @@ def plot_svm(X, y, r, weights, b, epochs, l_rate):
     plt.ylabel('y')
     plt.title('SVM con ' + str(epochs) +
               ' epochs y learning rate ' + str(l_rate))
-    path = "out/svm/"+str(epochs)+"_epochs_" + \
+    
+    path = "out/svm/"+str(len(y))+"_points_" +str(epochs)+"_epochs_" + \
         str(l_rate).replace("0.", "p") + "_lrate"
     plt.tight_layout()
     plt.savefig(path + '.png')
@@ -171,7 +179,6 @@ def run_svm(df, max_c, c_rate, test_pctg, epochs=1000, learning_rate=0.01):
 
 
 if __name__ == '__main__':
-
     with open("config.json") as config_file:
         config = json.load(config_file)
         generate = config["generate"] if "generate" in config else True
@@ -184,6 +191,7 @@ if __name__ == '__main__':
         x_min, x_max, y_min, y_max = 0, 1, 0, 1
 
         if generate:
+            print(point_amount)
             data, line = random_points_within_range(
                 x_min, x_max, y_min, y_max, point_amount)
             df = pd.DataFrame(data, columns=["x", "y", "class"])
