@@ -42,7 +42,7 @@ def random_points_within_range(x_min, x_max, y_min, y_max, n, error_rate=0):
         x = x_points[i]
         y = y_points[i]
 
-        if y >= m * x + b:# and np.random.random() > error_rate:
+        if y >= m * x + b and np.random.random() > error_rate:
             classification = 1
         else:
             classification = -1

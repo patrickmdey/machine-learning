@@ -141,9 +141,9 @@ def run_perceptron(df, epochs, learning_rate):
     plot_preceptron(X, y, weights, epochs, learning_rate, True)
 
 
-def run_svm(df, max_c, c_rate, test_pctg, epochs=1000, learning_rate=0.01):
+def run_svm(df, initial_c, max_c, c_rate, test_pctg, epochs=1000, learning_rate=0.01):
     c_precisions = []
-    for c in range(1, max_c, c_rate):
+    for c in np.arange(initial_c, max_c, c_rate):
         precisions = []
         partitions = partition_dataset(df, test_pctg)
         for idx, partition in enumerate(partitions):
@@ -179,8 +179,6 @@ def run_svm(df, max_c, c_rate, test_pctg, epochs=1000, learning_rate=0.01):
         X, y, optimal_c, learning_rate, epochs)
     print("SVM best weights and error:", best_weights, min_error)
     r = svm.calculate_margin(best_weights)
-
-    print("SVM:", best_weights)
     print("Margin:", r)
 
     plot_svm(X, y, r, best_weights, best_b, epochs, learning_rate)
@@ -195,8 +193,11 @@ if __name__ == '__main__':
         point_amount = config["point_amount"] if "point_amount" in config else 30
         epochs = config["epochs"] if "epochs" in config else 1000
         learning_rate = config["learning_rate"] if "learning_rate" in config else 0.01
+        error_rate = config["error_rate"] if "error_rate" in config else 0
 
         x_min, x_max, y_min, y_max = 0, 5, 0, 5
+
+        file_name+="-"+str(point_amount)
 
         if generate:
             print(point_amount)
@@ -211,16 +212,15 @@ if __name__ == '__main__':
             df = pd.read_csv(file_name+".csv")
             line = pd.read_csv(file_name+"-line.csv").values
 
-        print(method, epochs, learning_rate)
-
         if method.lower() == "perceptron":
             run_perceptron(df, epochs, learning_rate)
         elif method.lower() == "svm":
             test_pctg = 0.1
-            max_c = 250
-            c_rate = 50
+            initial_c = 0.1
+            max_c = 2
+            c_rate = 0.2
 
-            run_svm(df, max_c, c_rate, test_pctg, epochs, learning_rate)
+            run_svm(df, initial_c, max_c, c_rate, test_pctg, epochs, learning_rate)
         else:
             print("Invalid method")
     config_file.close()
