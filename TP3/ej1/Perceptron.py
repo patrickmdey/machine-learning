@@ -1,5 +1,6 @@
 import numpy as np
-
+import matplotlib.pyplot as plt
+import os
 
 class Perceptron:
     def __init__(self, input_dim):
@@ -9,7 +10,7 @@ class Perceptron:
     def predict(self, weights, train_example):
         return np.sign(np.dot(train_example, weights))
 
-    def train(self, X, y, epochs=1000, learning_rate=0.1):
+    def train(self, X, y, epochs=1000, learning_rate=0.1, animate=False):
         error = 100
         min_error = len(X)
         curr_epoch = 0
@@ -27,6 +28,9 @@ class Perceptron:
                 min_error = error
                 min_w = self.weights
 
+            if animate and curr_epoch % 10 == 0:
+                self.plot_perceptron(X, y, curr_epoch)
+
             curr_epoch += 1
 
         self.weights = min_w
@@ -40,3 +44,28 @@ class Perceptron:
             error += (activation_o - y[i])**2
 
         return error
+
+    def plot_perceptron(self, X, y, epoch):
+        plt.clf()
+        line_x = np.linspace(0, 5, 2)
+        # w1*x1 + w2*x2 + b = 0 => -(w1*x1 + b)/w2 = x2
+        line_y = -(line_x * self.weights[0] + self.weights[2])/self.weights[1]
+
+        plt.plot(line_x, line_y, color='blue')
+
+        plt.xlim([0, 5])
+        plt.ylim([0, 5])
+        plt.xlabel('x')
+        plt.ylabel('y')
+
+        point_amount = len(y)
+
+        plt.scatter(X[:, 0], X[:, 1], color=[
+                    'red' if c == -1 else 'green' for c in y])
+
+        path = "out/perceptron/animation/"
+        os.mkdir(path) if not os.path.exists(path) else None
+        path += str(point_amount)+"_points_animation_epoch_"+str(epoch)
+
+        plt.tight_layout()
+        plt.savefig(path+'.png')

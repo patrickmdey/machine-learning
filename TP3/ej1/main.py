@@ -130,12 +130,12 @@ def plot_svm(X, y, r, weights, b, epochs, l_rate):
     plt.savefig(path + '.png')
 
 
-def run_perceptron(df, epochs, learning_rate):
+def run_perceptron(df, epochs, learning_rate, animation=False):
     X = df.loc[:, ['x', 'y']].values
     y = df.loc[:, ['class']].values.ravel()
 
     perceptron = Perceptron(2)
-    error, weights = perceptron.train(X, y, epochs, learning_rate)
+    error, weights = perceptron.train(X, y, epochs, learning_rate, animation)
     print("Perceptron:", weights, error)
     plot_preceptron(X, y, weights, epochs, learning_rate, False)
     plot_preceptron(X, y, weights, epochs, learning_rate, True)
@@ -188,6 +188,7 @@ if __name__ == '__main__':
     with open("config.json") as config_file:
         config = json.load(config_file)
         generate = config["generate"] if "generate" in config else True
+        animate = config["animate"] if "animate" in config else False
         file_name = config["file_name"] if "file_name" in config else "TP3-1"
         method = config["method"] if "method" in config else "SVM"
         point_amount = config["point_amount"] if "point_amount" in config else 30
@@ -213,7 +214,7 @@ if __name__ == '__main__':
             line = pd.read_csv(file_name+"-line.csv").values
 
         if method.lower() == "perceptron":
-            run_perceptron(df, epochs, learning_rate)
+            run_perceptron(df, epochs, learning_rate, animation=animate)
         elif method.lower() == "svm":
             test_pctg = 0.1
             initial_c = 0.1
