@@ -1,7 +1,7 @@
 #!/bin/bash
 
 learning_rates=(0.1 0.01 0.001)
-epochs=(100 1000 10000)
+epochs=(1000 10000 100000)
 point_amounts=(30 60 120)
 
 if (($# != 2)); then
@@ -26,7 +26,7 @@ for k in $(seq 0 $((${#point_amounts[@]} - 1))); do
                     \"generate\": false,
                     \"method\": \"$1\",
                     \"file_name\": \"$file_name\",
-                    \"point_number\": ${point_amounts[$k]},
+                    \"point_amount\": ${point_amounts[$k]},
                     \"learning_rate\": ${learning_rates[$i]},
                     \"epochs\": ${epochs[$j]},
                     \"error_rate\": $error_rate

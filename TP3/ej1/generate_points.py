@@ -10,7 +10,7 @@ point_amount = 30
 error_rate = 0
 
 if len(sys.argv) > 3:
-    print("Generating", str(sys.argv[2]), "points and ", str(sys.argv[3]), "error rate")
+    print("Generating", str(sys.argv[2]), "points and", str(sys.argv[3]), "error rate")
     point_amount = int(sys.argv[2])
     error_rate = float(sys.argv[3])
 

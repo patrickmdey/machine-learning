@@ -200,7 +200,6 @@ if __name__ == '__main__':
         file_name+="-"+str(point_amount)
 
         if generate:
-            print(point_amount)
             # theres a 5% chance of a point being in the wrong side of the line
             data, line = random_points_within_range(
                 x_min, x_max, y_min, y_max, point_amount, 0.05)

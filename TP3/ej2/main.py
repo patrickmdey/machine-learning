@@ -103,7 +103,9 @@ if __name__ == '__main__':
     step = 0.2
     c = 0.1
 
-    for c in np.arange(0.1, 2.0 + step, step):
+    c_values = [0.5, 5.0, 10.0, 50.0]
+
+    for c in c_values:
         for kernel in kernels:
             print("C:", c)
             print("Kernel:", kernel)
