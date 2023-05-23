@@ -96,7 +96,7 @@ if __name__ == '__main__':
 
     best = {}
     kernels = ['linear', 'poly', 'rbf', 'sigmoid']
-    step = 0.1
+    step = 0.2
     c = 0.1
 
     #TODO:
