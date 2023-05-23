@@ -17,13 +17,16 @@ def build_dataset():
     imgs = np.empty(shape=(0, 4))
 
     with Image.open("images/cielo.jpg") as img:
-        imgs = np.append(imgs, prepare_images(np.asarray(img), CIELO_CLASS), axis=0)
+        imgs = np.append(imgs, prepare_images(
+            np.asarray(img), CIELO_CLASS), axis=0)
 
     with Image.open("images/pasto.jpg") as img:
-        imgs = np.append(imgs, prepare_images(np.asarray(img), PASTO_CLASS), axis=0)
+        imgs = np.append(imgs, prepare_images(
+            np.asarray(img), PASTO_CLASS), axis=0)
 
     with Image.open("images/vaca.jpg") as img:
-        imgs = np.append(imgs, prepare_images(np.asarray(img), VACA_CLASS), axis=0)
+        imgs = np.append(imgs, prepare_images(
+            np.asarray(img), VACA_CLASS), axis=0)
 
     df = pd.DataFrame(imgs, columns=['r', 'g', 'b', 'class'], dtype=int)
     df.to_csv("img_dataset.csv", encoding='utf-8', index=False, header=True)
@@ -57,7 +60,8 @@ def partition_dataset(df, partition_percentage):
             up = len(df)
 
     if (up - bottom) != partition_size:
-        partitions[-2] = pd.concat([partitions[-2], partitions[-1]], ignore_index=True)
+        partitions[-2] = pd.concat([partitions[-2],
+                                   partitions[-1]], ignore_index=True)
 
         partitions = partitions[:-1]
 
@@ -78,7 +82,7 @@ def save_heatmap(df, kernel, c):
         tick_label.set_text(f"{int(tick_values[i] * 100)}%")
     cbar.ax.set_yticklabels(tick_labels)
 
-    title = "Matriz de confusión C=" + str(c) + " Kernel=" + kernel 
+    title = "Matriz de confusión C=" + str(c) + " Kernel=" + kernel
     ax.set_title(title, fontsize=7, pad=10)
     plt.tight_layout()
 
@@ -99,10 +103,6 @@ if __name__ == '__main__':
     step = 0.2
     c = 0.1
 
-    #TODO:
-    # Esto mandarlo a un metodo que sea encontrar mejor c y mejor kernel
-    # Hacer un metodo aparte donde haces k-cross con cada metodo y cada c
-    # Eso lo vas pasando cmo hicimos en los tps anteriores
     for c in np.arange(0.1, 2.0 + step, step):
         for kernel in kernels:
             print("C:", c)
@@ -113,7 +113,7 @@ if __name__ == '__main__':
 
             cm = confusion_matrix(test['class'], y_pred)
             cm = (cm.T / cm.sum(axis=1)).T  # Divide rows by sum of row
-            save_heatmap(cm,kernel, c)
+            save_heatmap(cm, kernel, c)
 
             accuracy = (cm.diagonal().sum()) / cm.sum()
             if not best or best['accuracy'] < accuracy:

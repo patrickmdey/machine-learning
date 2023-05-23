@@ -136,7 +136,7 @@ def run_perceptron(df, epochs, learning_rate):
 
     perceptron = Perceptron(2)
     error, weights = perceptron.train(X, y, epochs, learning_rate)
-    print("Perceptron:", weights)
+    print("Perceptron:", weights, error)
     plot_preceptron(X, y, weights, epochs, learning_rate, False)
     plot_preceptron(X, y, weights, epochs, learning_rate, True)
 
