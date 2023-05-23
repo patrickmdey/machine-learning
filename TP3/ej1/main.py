@@ -5,6 +5,7 @@ from Perceptron import Perceptron
 from SVM import SVM
 from utils import *
 import json
+import os
 
 
 def optimize_perceptron(X, y, weights):
@@ -25,7 +26,7 @@ def optimize_perceptron(X, y, weights):
 
     lower_midpoint = (lower_points[0] + lower_points[1]) / 2
 
-    line_x = np.linspace(0, 1, 2)
+    line_x = np.linspace(0, 5, 2)
 
     optimal_point = (upper_points[0] + lower_midpoint) / 2
 
@@ -40,19 +41,18 @@ def optimize_perceptron(X, y, weights):
 
 def plot_preceptron(X, y, weights, epochs, l_rate, plot_optimal=False):
     plt.clf()
-    line_x = np.linspace(0, 1, 2)
+    line_x = np.linspace(0, 5, 2)
     # w1*x1 + w2*x2 + b = 0 => -(w1*x1 + b)/w2 = x2
     line_y = -(line_x * weights[0] + weights[2])/weights[1]
 
     plt.plot(line_x, line_y, color='blue')
 
-    plt.xlim([0, 1])
-    plt.ylim([0, 1])
+    plt.xlim([0, 5])
+    plt.ylim([0, 5])
     plt.title('Perceptron con ' + str(epochs) +
               ' épocas y learning rate ' + str(l_rate))
     plt.xlabel('x')
     plt.ylabel('y')
-
 
     point_amount = len(y)
     if plot_optimal:
@@ -79,17 +79,19 @@ def plot_preceptron(X, y, weights, epochs, l_rate, plot_optimal=False):
         plt.scatter(lower_points[:, 0], lower_points[:,
                     1], color='pink')  # lower points
 
-        point_amount = len(y) +3
+        point_amount = len(y) + 3
 
     plt.scatter(X[:, 0], X[:, 1], color=[
                 'red' if c == -1 else 'green' for c in y])
 
+    path = "out/perceptron/"+str(point_amount)+"_points"
+    os.mkdir(path) if not os.path.exists(path) else None
+    path += "/"+str(epochs)+"_epochs"
+    os.mkdir(path) if not os.path.exists(path) else None
+    path += "/"+str(l_rate).replace(".", "p") + "_lrate"
+    os.mkdir(path) if not os.path.exists(path) else None
 
-    path = "out/perceptron/"+str(point_amount)+"_points_"+str(epochs)+"_epochs_" + \
-        str(l_rate).replace("0.", "p") + "_lrate" + \
-        ("_optimal" if plot_optimal else "")
-
-    # print(path)
+    path += "/hyperplane"+("_with_optimal" if plot_optimal else "")
 
     plt.tight_layout()
     plt.savefig(path+'.png')
@@ -97,7 +99,7 @@ def plot_preceptron(X, y, weights, epochs, l_rate, plot_optimal=False):
 
 def plot_svm(X, y, r, weights, b, epochs, l_rate):
     plt.clf()
-    line_x = np.linspace(0, 1, 2)
+    line_x = np.linspace(0, 5, 2)
 
     # w1*x1 + w2*x2 + b = 0 => -(w1*x1 + b)/w2 = x2
     line_y = -(line_x * weights[0] + b)/weights[1]
@@ -108,16 +110,22 @@ def plot_svm(X, y, r, weights, b, epochs, l_rate):
     plt.plot(line_x, line_y, color='black')
     # plt.plot(line_x, line_y_up, linestyle='dashed', color='blue')
     # plt.plot(line_x, line_y_down, linestyle='dashed', color='blue')
-    plt.xlim([0, 1])
-    plt.ylim([0, 1])
-    plt.legend(['Instance', 'Decision boundary', 'Margin'], loc='upper right')
+    plt.xlim([0, 5])
+    plt.ylim([0, 5])
+    plt.legend(['Instancia', 'Clasificador'], loc='upper right')
     plt.xlabel('x')
     plt.ylabel('y')
     plt.title('SVM con ' + str(epochs) +
-              ' epochs y learning rate ' + str(l_rate))
-    
-    path = "out/svm/"+str(len(y))+"_points_" +str(epochs)+"_epochs_" + \
-        str(l_rate).replace("0.", "p") + "_lrate"
+              ' épocas y learning_rate ' + str(l_rate))
+
+    path = "out/svm/"+str(point_amount)+"_points"
+    os.mkdir(path) if not os.path.exists(path) else None
+    path += "/"+str(epochs)+"_epochs"
+    os.mkdir(path) if not os.path.exists(path) else None
+    path += "/"+str(l_rate).replace(".", "p") + "_lrate"
+    os.mkdir(path) if not os.path.exists(path) else None
+
+    path += "/svm"
     plt.tight_layout()
     plt.savefig(path + '.png')
 
@@ -188,10 +196,11 @@ if __name__ == '__main__':
         epochs = config["epochs"] if "epochs" in config else 1000
         learning_rate = config["learning_rate"] if "learning_rate" in config else 0.01
 
-        x_min, x_max, y_min, y_max = 0, 1, 0, 1
+        x_min, x_max, y_min, y_max = 0, 5, 0, 5
 
         if generate:
             print(point_amount)
+            # theres a 5% chance of a point being in the wrong side of the line
             data, line = random_points_within_range(
                 x_min, x_max, y_min, y_max, point_amount, 0.05)
             df = pd.DataFrame(data, columns=["x", "y", "class"])

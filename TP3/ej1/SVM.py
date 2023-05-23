@@ -37,10 +37,12 @@ class SVM:
         tot_error = 0
         for i in range(len(X)):
             tot_error += (y[i] - self.predict(self.weights, self.b, X[i]))**2
+            
         return tot_error
 
     def predict(self, weights, b, X):
         return np.sign(np.dot(X, weights) + b)
+        
 
     def calculate_margin(self, weights):
         return 1 / np.linalg.norm(weights)

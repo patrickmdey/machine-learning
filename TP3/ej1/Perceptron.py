@@ -18,8 +18,7 @@ class Perceptron:
             i = np.random.randint(0, len(X))
             train_example = np.append(X[i], [1])  # we append bias
 
-            delta_w = learning_rate * \
-                (y[i] - self.predict(self.weights, train_example)) * train_example
+            delta_w = learning_rate * (y[i] - self.predict(self.weights, train_example)) * train_example
             self.weights += delta_w
 
             error = self.calculate_error(X, y)

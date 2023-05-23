@@ -1,7 +1,7 @@
 from utils import *
 import sys
 
-x_min, x_max, y_min, y_max = 0, 1, 0, 1
+x_min, x_max, y_min, y_max = 0, 5, 0, 5
 file_name = "TP3-1"
 
 point_amount = 30
