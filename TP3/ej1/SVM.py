@@ -8,7 +8,7 @@ class SVM:
         self.b = 0.0
 
     def train(self, X, y, C, learning_rate, epochs=10000):
-        learning_rate = 0.0001  # TODO: set constant
+        # learning_rate = 0.0001  # TODO: set constant
         min_error = np.inf
         best_weights = self.weights
         best_b = 0.0

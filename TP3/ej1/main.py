@@ -133,12 +133,12 @@ def plot_svm(X, y, r, weights, b, epochs, l_rate, noisy=False):
     plt.savefig(path + '.png')
 
 
-def run_perceptron(df, epochs, learning_rate):
+def run_perceptron(df, epochs, learning_rate, animation=False):
     X = df.loc[:, ['x', 'y']].values
     y = df.loc[:, ['class']].values.ravel()
 
     perceptron = Perceptron(2)
-    error, weights = perceptron.train(X, y, epochs, learning_rate)
+    error, weights = perceptron.train(X, y, epochs, learning_rate, animation)
     print("Perceptron:", weights, error)
 
     return X, y, weights
@@ -193,6 +193,7 @@ if __name__ == '__main__':
     with open("config.json") as config_file:
         config = json.load(config_file)
         generate = config["generate"] if "generate" in config else True
+        animate = config["animate"] if "animate" in config else False
         file_name = config["file_name"] if "file_name" in config else "TP3-1"
         method = config["method"] if "method" in config else "SVM"
         point_amount = config["point_amount"] if "point_amount" in config else 30
