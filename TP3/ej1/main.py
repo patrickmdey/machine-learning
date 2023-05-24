@@ -8,7 +8,7 @@ import json
 import os
 
 
-def optimize_perceptron(X, y, weights):
+def optimize_perceptron(X, y, weights, upper_amount=1, lower_amount=2):
     A = weights[0]
     B = weights[1]
     C = weights[2]
@@ -21,8 +21,8 @@ def optimize_perceptron(X, y, weights):
     lower_distances = np.abs(
         A * lower_points[:, 0] + B * lower_points[:, 1] + C) / np.sqrt(A**2 + B**2)
 
-    upper_points = upper_points[np.argsort(upper_distances)[:1]]
-    lower_points = lower_points[np.argsort(lower_distances)[:2]]
+    upper_points = upper_points[np.argsort(upper_distances)[:upper_amount]]
+    lower_points = lower_points[np.argsort(lower_distances)[:lower_amount]]
 
     lower_midpoint = (lower_points[0] + lower_points[1]) / 2
 
@@ -39,7 +39,7 @@ def optimize_perceptron(X, y, weights):
     return line_y, upper_points, lower_points, optimal_point
 
 
-def plot_preceptron(X, y, weights, epochs, l_rate, plot_optimal=False):
+def plot_preceptron(X, y, weights, epochs, l_rate, noisy=False, plot_optimal=False):
     plt.clf()
     line_x = np.linspace(0, 5, 2)
     # w1*x1 + w2*x2 + b = 0 => -(w1*x1 + b)/w2 = x2
@@ -84,7 +84,9 @@ def plot_preceptron(X, y, weights, epochs, l_rate, plot_optimal=False):
     plt.scatter(X[:, 0], X[:, 1], color=[
                 'red' if c == -1 else 'green' for c in y])
 
-    path = "out/perceptron/"+str(point_amount)+"_points"
+    path = "out/perceptron/" + ("with" if noisy else "no") + "_noise"
+    os.mkdir(path) if not os.path.exists(path) else None
+    path += "/" + str(point_amount)+"_points"
     os.mkdir(path) if not os.path.exists(path) else None
     path += "/"+str(epochs)+"_epochs"
     os.mkdir(path) if not os.path.exists(path) else None
@@ -97,7 +99,7 @@ def plot_preceptron(X, y, weights, epochs, l_rate, plot_optimal=False):
     plt.savefig(path+'.png')
 
 
-def plot_svm(X, y, r, weights, b, epochs, l_rate):
+def plot_svm(X, y, r, weights, b, epochs, l_rate, noisy=False):
     plt.clf()
     line_x = np.linspace(0, 5, 2)
 
@@ -118,14 +120,15 @@ def plot_svm(X, y, r, weights, b, epochs, l_rate):
     plt.title('SVM con ' + str(epochs) +
               ' épocas y learning_rate ' + str(l_rate))
 
-    path = "out/svm/"+str(point_amount)+"_points"
+    path = "out/svm/" + ("with" if noisy else "no") + "_noise"
+    os.mkdir(path) if not os.path.exists(path) else None
+    path += "/"+str(point_amount)+"_points"
     os.mkdir(path) if not os.path.exists(path) else None
     path += "/"+str(epochs)+"_epochs"
     os.mkdir(path) if not os.path.exists(path) else None
     path += "/"+str(l_rate).replace(".", "p") + "_lrate"
-    os.mkdir(path) if not os.path.exists(path) else None
 
-    path += "/svm"
+    # path += "/svm"
     plt.tight_layout()
     plt.savefig(path + '.png')
 
@@ -137,11 +140,13 @@ def run_perceptron(df, epochs, learning_rate):
     perceptron = Perceptron(2)
     error, weights = perceptron.train(X, y, epochs, learning_rate)
     print("Perceptron:", weights, error)
-    plot_preceptron(X, y, weights, epochs, learning_rate, False)
-    plot_preceptron(X, y, weights, epochs, learning_rate, True)
+
+    return X, y, weights
+    # plot_preceptron(X, y, weights, epochs, learning_rate, False)
+    # plot_preceptron(X, y, weights, epochs, learning_rate, True)
 
 
-def run_svm(df, initial_c, max_c, c_rate, test_pctg, epochs=1000, learning_rate=0.01):
+def run_svm(df, initial_c, max_c, c_rate, test_pctg, is_noisy, epochs=1000, learning_rate=0.01):
     c_precisions = []
     for c in np.arange(initial_c, max_c, c_rate):
         precisions = []
@@ -181,7 +186,7 @@ def run_svm(df, initial_c, max_c, c_rate, test_pctg, epochs=1000, learning_rate=
     r = svm.calculate_margin(best_weights)
     print("Margin:", r)
 
-    plot_svm(X, y, r, best_weights, best_b, epochs, learning_rate)
+    plot_svm(X, y, r, best_weights, best_b, epochs, learning_rate, is_noisy)
 
 
 if __name__ == '__main__':
@@ -195,9 +200,14 @@ if __name__ == '__main__':
         learning_rate = config["learning_rate"] if "learning_rate" in config else 0.01
         error_rate = config["error_rate"] if "error_rate" in config else 0
 
+        is_noisy = False
+        if error_rate != 0:
+            is_noisy = True
+
         x_min, x_max, y_min, y_max = 0, 5, 0, 5
 
-        file_name+="-"+str(point_amount)
+        file_name += "-"+str(point_amount)
+        print(file_name)
 
         if generate:
             # theres a 5% chance of a point being in the wrong side of the line
@@ -212,14 +222,19 @@ if __name__ == '__main__':
             line = pd.read_csv(file_name+"-line.csv").values
 
         if method.lower() == "perceptron":
-            run_perceptron(df, epochs, learning_rate)
+            X, y, weights = run_perceptron(df, epochs, learning_rate)
+            plot_preceptron(X, y, weights, epochs,
+                            learning_rate, is_noisy, False)
+            plot_preceptron(X, y, weights, epochs,
+                            learning_rate, is_noisy, True)
         elif method.lower() == "svm":
             test_pctg = 0.1
             initial_c = 0.1
             max_c = 2
             c_rate = 0.2
 
-            run_svm(df, initial_c, max_c, c_rate, test_pctg, epochs, learning_rate)
+            run_svm(df, initial_c, max_c, c_rate,
+                    test_pctg,is_noisy, epochs, learning_rate)
         else:
             print("Invalid method")
     config_file.close()
