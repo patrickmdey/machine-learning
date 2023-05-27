@@ -1,13 +1,7 @@
 __pycache__
 .ipynb_checkpoints
 *.pyc
-out
 .idea
 .DS_Store
-*.pdf
 *.vscode
-*.png
-post_processing/
-classification.csv
-tenis.csv
-TP3-1.csv
+out
