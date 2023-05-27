@@ -1,8 +1,7 @@
 #!/bin/bash
 
 learning_rates=(0.1 0.01 0.001)
-# epochs=(1000 10000 100000)
-epochs=(100 1000 10000)
+epochs=(1000 10000 100000)
 point_amounts=(30 60 120)
 
 if (($# != 2)); then

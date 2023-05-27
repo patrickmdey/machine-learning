@@ -1,7 +1,9 @@
 {
 	"generate": true,
+	"mehtod": "perceptron",
 	"file_name": "TP3-1",
     "point_number": 30,
 	"method": "perceptron",
+	"epochs": 1000,
 	"learning_rate": 0.1
 }
