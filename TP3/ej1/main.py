@@ -99,7 +99,7 @@ def plot_preceptron(X, y, weights, epochs, l_rate, noisy=False, plot_optimal=Fal
     plt.savefig(path+'.png')
 
 
-def plot_svm(X, y, r, weights, b, epochs, l_rate, noisy=False):
+def plot_svm(X, y, r, optimal_c, weights, b, epochs, l_rate, noisy=False):
     plt.clf()
     line_x = np.linspace(0, 5, 2)
 
@@ -118,7 +118,7 @@ def plot_svm(X, y, r, weights, b, epochs, l_rate, noisy=False):
     plt.xlabel('x')
     plt.ylabel('y')
     plt.title('SVM con ' + str(epochs) +
-              ' épocas y learning_rate ' + str(l_rate))
+              ' épocas y learning_rate ' + str(l_rate) + " y C = " + str(optimal_c))
 
     path = "out/svm/" + ("with" if noisy else "no") + "_noise"
     os.mkdir(path) if not os.path.exists(path) else None
@@ -148,6 +148,7 @@ def run_perceptron(df, epochs, learning_rate, animation=False):
 
 def run_svm(df, initial_c, max_c, c_rate, test_pctg, is_noisy, epochs=1000, learning_rate=0.01):
     c_precisions = []
+    
     for c in np.arange(initial_c, max_c, c_rate):
         precisions = []
         partitions = partition_dataset(df, test_pctg)
@@ -175,7 +176,9 @@ def run_svm(df, initial_c, max_c, c_rate, test_pctg, is_noisy, epochs=1000, lear
         c_precisions.append(
             {"mean": np.mean(precisions), "std": np.std(precisions)})
 
-    optimal_c = np.argmax([c["mean"] for c in c_precisions]) + 1
+    optimal_c = np.argmax([c["mean"] for c in c_precisions])
+
+    optimal_c = np.arange(initial_c, max_c, c_rate)[optimal_c]
 
     X = df.loc[:, ['x', 'y']].values
     y = df.loc[:, ['class']].values.ravel()
@@ -186,7 +189,7 @@ def run_svm(df, initial_c, max_c, c_rate, test_pctg, is_noisy, epochs=1000, lear
     r = svm.calculate_margin(best_weights)
     print("Margin:", r)
 
-    plot_svm(X, y, r, best_weights, best_b, epochs, learning_rate, is_noisy)
+    plot_svm(X, y, r, optimal_c, best_weights, best_b, epochs, learning_rate, is_noisy)
 
 
 if __name__ == '__main__':
