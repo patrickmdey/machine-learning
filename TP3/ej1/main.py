@@ -38,7 +38,6 @@ def optimize_perceptron(X, y, weights, upper_amount=1, lower_amount=2):
 
     return line_y, upper_points, lower_points, optimal_point
 
-
 def plot_preceptron(X, y, weights, epochs, l_rate, noisy=False, plot_optimal=False):
     plt.clf()
     line_x = np.linspace(0, 5, 2)
@@ -190,6 +189,8 @@ def run_svm(df, initial_c, max_c, c_rate, test_pctg, is_noisy, epochs=1000, lear
     print("Margin:", r)
 
     plot_svm(X, y, r, optimal_c, best_weights, best_b, epochs, learning_rate, is_noisy)
+
+
 
 
 if __name__ == '__main__':

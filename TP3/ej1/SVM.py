@@ -45,3 +45,5 @@ class SVM:
 
     def calculate_margin(self, weights):
         return 1 / np.linalg.norm(weights)
+    
+    
