@@ -12,6 +12,17 @@ from kmeans import Kmeans
 
 # TODO: agregarle a los clusters cuantas peliculas de cada tipo tienen!!!!
 
+def run_single_kmeans(df, cluster_amount, genres):
+    print("Running single kmeans with " + str(cluster_amount) + " clusters")
+    kmeans = Kmeans(cluster_amount, df.values.tolist(), genres)
+    centroids = kmeans.solve()
+    tot = 0
+    for i, cluster in enumerate(kmeans.get_amount_of_genres_per_cluster()):
+        total = sum(cluster.values())
+        result = {key: str(value*100 / total) + '%' for key, value in cluster.items()}
+        print(f"{i}[{total}]: {result}")
+        tot+= sum(cluster.values())
+    print(tot)
 
 def test_heriarchy():
     data = np.array([[0.4, 0.53], [0.22, 0.38], [0.35, 0.32],
@@ -116,9 +127,17 @@ if __name__ == '__main__':
         run_kohonen(df, params, genres)
 
     elif method == 'kmeans':
-        kmeans = Kmeans(3, df.values.tolist(), genres)
-        centroids = kmeans.solve()
-        # print(centroids)
+        # kmeans = Kmeans(3, df.values.tolist(), genres)
+        # centroids = kmeans.solve()
+        # tot = 0
+        # for i, cluster in enumerate(kmeans.get_amount_of_genres_per_cluster()):
+        #     total = sum(cluster.values())
+        #     result = {key: str(value*100 / total) + '%' for key, value in cluster.items()}
+        #     print(f"{i}[{total}]: {result}")
+        #     tot+= sum(cluster.values())
+        # print(tot)
+
+        run_single_kmeans(df, 3, genres)
 
         variations = []
 
@@ -129,6 +148,8 @@ if __name__ == '__main__':
 
         print(variations)
         plot_elbow(variations)
+
+        run_single_kmeans(df, 4, genres)
 
     elif method == 'hierarchical':
         # test_heriarchy()

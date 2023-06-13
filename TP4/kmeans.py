@@ -20,7 +20,7 @@ class Kmeans:
         for cluster in clusters:
             ######
             # TODO: check!!!!!!!!
-            print(clusters[cluster])
+            # print(clusters[cluster])
             masked_cluster = [subarray[:-1] for subarray in clusters[cluster]]
             #print(masked_cluster)
             ######
@@ -75,6 +75,9 @@ class Kmeans:
                 self.genres_per_cluster[key][observation[-1]] += 1
 
         return new_centroids, clusters
+    
+    def get_amount_of_genres_per_cluster(self):
+        return self.genres_per_cluster
 
     def predict_genre(self, observation, centroids):
         cluster_idx = -1
