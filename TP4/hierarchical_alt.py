@@ -3,27 +3,14 @@ import math
 
 
 class Group:
-    def __init__(self, element, genres, use_centroid=True):
+    def __init__(self, element, use_centroid=True):
         self.elements = [element]
-        self.genres = {genre: 0 for genre in genres}
-        self.genres[element[-1]] = 1
         self.centroid = np.array(element[:-1], dtype=float) if use_centroid else None
 
     def add_element(self, group):
-        # TODO: check!!!!!!!
-        for element in group.elements:
-            self.elements.append(element)
-            for genre in self.genres:
-                self.genres[genre] += group.genres[genre]
-        # self.elements.extend(group.elements)
-
-        # TODO: check!!!!
-
-        
+        self.elements.extend(group.elements)
         masked_elements = [subarray[:-1] for subarray in self.elements]
-        # print(masked_elements)
         self.centroid = np.mean(masked_elements, axis=0)
-        #print(self.centroid)
 
     def calculate_distance_to(self, other_group):
         distance = np.linalg.norm(self.centroid - other_group.centroid)
@@ -40,12 +27,7 @@ class HierarchicalGroups:
         self.distances = {}
         self.genres = genres
 
-    def predict_genre(self, observation, clusters):
-        min_dist = math.inf
-        cluster_idx = None
-
-        obs_array = np.array(observation)
-
+    def predict_genre(self, observation, clusters, genres):
         min_dist = math.inf
         min_cluster = None
         for idx, cluster in enumerate(clusters):
@@ -57,12 +39,16 @@ class HierarchicalGroups:
                 min_cluster = cluster
             centroid = np.array(centroid)
 
-        return max(min_cluster.genres, key=min_cluster.genres.get)
+        genre_count = {genre: 0 for genre in genres}
+        for obs in min_cluster.elements:
+            genre_count[obs[-1]] += 1
+
+        return max(genre_count, key=genre_count.get)
 
     def solve(self):
         clusters = []
         for idx, observation in enumerate(self.observations):
-            clusters.append(Group(observation, self.genres))
+            clusters.append(Group(observation))
 
         # esta escrito asi porque es shape
         distances = np.zeros((len(clusters), len(clusters)))
