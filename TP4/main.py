@@ -11,6 +11,13 @@ from utils import boxplot_column
 from kohonen_network import KohonenNetwork
 from kmeans import Kmeans
 
+def test_heriarchy():
+    data = np.array([[0.4, 0.53], [0.22, 0.38], [0.35, 0.32], [0.26, 0.19], [0.08, 0.41], [0.45, 0.3]])
+    her = HierarchicalGroups(3, data)
+    clusters = her.solve()
+    for i, cluster in enumerate(clusters):
+        print(f"Cluster {i + 1}: {cluster.elements}")
+
 
 def plot_elbow(variations):
     plt.clf()
@@ -93,28 +100,28 @@ def run_kohonen(df, params):
 if __name__ == '__main__':
 
     method = 'hierarchical'
-    # analysis_cols = ["budget", "popularity", "production_companies", "production_countries",
-    #                "revenue", "runtime", "spoken_languages", "vote_average", "vote_count"]
+    analysis_cols = ["budget", "popularity", "production_companies", "production_countries",
+                   "revenue", "runtime", "spoken_languages", "vote_average", "vote_count"]
 
-    # # TODO: chequear exactamente que variables vamos a usar para comparar
-    # # useful_cols = analysis_cols + ["release_date"]
+    # TODO: chequear exactamente que variables vamos a usar para comparar
+    # useful_cols = analysis_cols + ["release_date"]
 
-    # # dataset_analysis(pd.read_csv("movie_data.csv", sep=';'), analysis_cols)
+    # dataset_analysis(pd.read_csv("movie_data.csv", sep=';'), analysis_cols)
 
 
-    # df = pd.read_csv('movie_data.csv', sep=';', usecols=analysis_cols)
+    df = pd.read_csv('movie_data.csv', sep=';', usecols=analysis_cols)
 
-    # # years = df["release_date"].str.split("-", n=2, expand=True)[0]
-    # # print(years)
-    # # df["release_date"] = years
+    # years = df["release_date"].str.split("-", n=2, expand=True)[0]
+    # print(years)
+    # df["release_date"] = years
 
-    # # remove rows with null values
-    # df = df.dropna()
-    # df = df.drop_duplicates(subset=analysis_cols, keep=False)
+    # remove rows with null values
+    df = df.dropna()
+    df = df.drop_duplicates(subset=analysis_cols, keep=False)
 
-    # # # normalize df
-    # # TODO: esto lo hicimos con un scaler, adaptarlo
-    # df = (df - df.mean()) / (df.max() - df.min())
+    # # normalize df
+    # TODO: esto lo hicimos con un scaler, adaptarlo
+    df = (df - df.mean()) / (df.max() - df.min())
 
     if method == 'kohonen':
         params = {
@@ -143,8 +150,11 @@ if __name__ == '__main__':
         plot_elbow(variations)
 
     elif method == 'hierarchical':
-        data = np.array([[0.4, 0.53], [0.22, 0.38], [0.35, 0.32], [0.26, 0.19], [0.08, 0.41], [0.45, 0.3]])
-        her = HierarchicalGroups(3, data)
-        clusters = her.solve()
+        test_heriarchy()
+        heriarchy = HierarchicalGroups(3, np.array(df.values.tolist()))
+        clusters = heriarchy.solve()
         for i, cluster in enumerate(clusters):
             print(f"Cluster {i + 1}: {cluster.elements}")
+
+
+    exit(0)

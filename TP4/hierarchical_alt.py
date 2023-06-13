@@ -10,10 +10,11 @@ class Group:
         self.centroid = element # TODO: esto solo si lo hacemos con el average, podriamos hacer pruebas con max y min
     
     def add_element(self, group):
-        #FIXME: es un array en realidad
-        np.concatenate(self.elements, group.elements)
-        # self.observations.append(group)
+        # print("Adding", group.id, "to", self.id)
+        # print("[" + str(self.elements) + "] + [" + str(group.elements) + "]")
+        self.elements = np.vstack((self.elements, group.elements))
         self.centroid = np.mean(self.elements, axis=0)
+        # print("Result", self.elements)
     
     def calculate_distance_to(self, other_group):
         distance = np.linalg.norm(self.centroid - other_group.centroid)
@@ -36,7 +37,6 @@ class HierarchicalGroups:
     def solve(self):
         clusters = [] # TODO: maybe map?
         for idx, observation in enumerate(self.observations):
-            #clusters[idx] = Group(observation)
             clusters.append(Group(observation))
 
         distances = np.zeros((len(clusters), len(clusters))) # esta escrito asi porque es shape
@@ -55,20 +55,17 @@ class HierarchicalGroups:
             min_distance_idxs = np.where(distances == min_distance)
             
             min_distance_idxs = min_distance_idxs[0]
-            print(min_distance_idxs)
-            first_group = min(min_distance_idxs) 
+            first_group = min(min_distance_idxs)
             second_group = max(min_distance_idxs) 
 
             # TODO: chequear que te viene
-            print(len(clusters))
-            print(second_group)
             
             to_remove = clusters.pop(second_group)
             clusters[first_group].add_element(to_remove)
 
             # TODO: borrar el segundo grupo ya que fue anexado pero poder mantener los indices
-            np.delete(distances, second_group, axis=0)
-            np.delete(distances, second_group, axis=1)
+            distances = np.delete(distances, second_group, axis=0) #Axis = 0 is row
+            distances = np.delete(distances, second_group, axis=1) #Axis = 1 is col
 
 
             for i, cluster in enumerate(clusters):
@@ -95,5 +92,3 @@ class HierarchicalGroups:
                 for second_group in groups:
                     if first_group.id != second_group.id:
                         first_group.calculate_distance_to(second_group)
-                
-        
