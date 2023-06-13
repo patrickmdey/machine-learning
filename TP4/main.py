@@ -80,7 +80,7 @@ def run_kohonen(df, params, genres):
 
 if __name__ == '__main__':
 
-    method = 'kmeans'
+    method = 'hierarchical'
     if len(sys.argv) > 1:
         method = sys.argv[1]  # kohonen, kmeans, hierarchical, analysis
 
@@ -133,8 +133,16 @@ if __name__ == '__main__':
     elif method == 'hierarchical':
         # test_heriarchy()
         heriarchy = HierarchicalGroups(3, df.values.tolist(), genres)
+        genre_count = {genre: 0 for genre in genres}
         clusters = heriarchy.solve()
+        genre_count_per_cluster = {}
         for i, cluster in enumerate(clusters):
-            print(f"Cluster {i + 1}: {cluster.elements}")
+            genre_count_per_cluster[i] = {genre: 0 for genre in genres}
+            for obs in cluster.elements:
+                genre_count[obs[-1]] += 1
+                genre_count_per_cluster[i][obs[-1]] += 1
+
+        print(genre_count)
+        print(genre_count_per_cluster)
 
     exit(0)
