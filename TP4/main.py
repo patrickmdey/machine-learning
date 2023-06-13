@@ -1,9 +1,8 @@
-import math
 import pandas as pd
 import numpy as np
 import seaborn as sns
-import sys
 import os
+import sys
 from matplotlib import pyplot as plt
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from hierarchical_alt import HierarchicalGroups
@@ -11,8 +10,13 @@ from utils import boxplot_column
 from kohonen_network import KohonenNetwork
 from kmeans import Kmeans
 
+
+# TODO: agregarle a los clusters cuantas peliculas de cada tipo tienen!!!!
+
+
 def test_heriarchy():
-    data = np.array([[0.4, 0.53], [0.22, 0.38], [0.35, 0.32], [0.26, 0.19], [0.08, 0.41], [0.45, 0.3]])
+    data = np.array([[0.4, 0.53], [0.22, 0.38], [0.35, 0.32],
+                    [0.26, 0.19], [0.08, 0.41], [0.45, 0.3]])
     her = HierarchicalGroups(3, data)
     clusters = her.solve()
     for i, cluster in enumerate(clusters):
@@ -24,6 +28,7 @@ def plot_elbow(variations):
     plt.plot(variations, marker='o')
     plt.xlabel("Cantidad de clusters")
     plt.ylabel("Variación total")
+    plt.title("Método del codo")
 
     if not os.path.exists("./out/kmeans"):
         os.makedirs("./out/kmeans")
@@ -66,6 +71,7 @@ def dataset_analysis(df, useful_cols):
     # print(df["original_title"].head())
 
     # get standard deviation per column
+    # TODO: ver std
     print(df.std)
 
 
@@ -98,31 +104,31 @@ def run_kohonen(df, params):
 
 
 if __name__ == '__main__':
+    
+    method = 'kmeans'
+    if len(sys.argv) > 1:
+        method = sys.argv[1] # kohonen, kmeans, hierarchical
 
-    method = 'hierarchical'
-    analysis_cols = ["budget", "imdb_id", "popularity", "production_companies", "production_countries",
-                   "revenue", "runtime", "spoken_languages", "vote_average", "vote_count"]
+    analysis_cols = ["budget", "genres", "imdb_id", "popularity", "production_companies", "production_countries",
+                     "revenue", "runtime", "spoken_languages", "vote_average", "vote_count"]
 
-    # TODO: chequear exactamente que variables vamos a usar para comparar
-    # useful_cols = analysis_cols + ["release_date"]
+    float_analysis_cols = ["budget", "popularity", "production_companies", "production_countries",
+                           "revenue", "runtime", "spoken_languages", "vote_average", "vote_count"]
 
     # dataset_analysis(pd.read_csv("movie_data.csv", sep=';'), analysis_cols)
 
-
     df = pd.read_csv('movie_data.csv', sep=';', usecols=analysis_cols)
 
-    # years = df["release_date"].str.split("-", n=2, expand=True)[0]
-    # print(years)
-    # df["release_date"] = years
+    df = df.loc[(df["genres"] == "Drama") | (
+        df["genres"] == "Comedy") | (df["genres"] == "Action")]
+    df = df.drop(["genres"], axis=1)
 
     # remove rows with null values
     df = df.dropna()
     df = df.drop_duplicates(subset="imdb_id", keep=False)
     df = df.drop(["imdb_id"], axis=1)
 
-    # # normalize df
-    # TODO: esto lo hicimos con un scaler, adaptarlo
-    df = (df - df.mean()) / (df.max() - df.min())
+    df.loc[:, float_analysis_cols] = StandardScaler().fit_transform(df[float_analysis_cols].values)
 
     if method == 'kohonen':
         params = {
@@ -130,7 +136,6 @@ if __name__ == '__main__':
             'init_k': 7,
             'init_r': 5
         }
-        # run_kohonen(df, params)
         run_kohonen(df, params)
 
     elif method == 'kmeans':
@@ -143,19 +148,17 @@ if __name__ == '__main__':
         for k in range(1, 10):
             kmeans = Kmeans(k, df.values.tolist())
             centroids, clusters = kmeans.find_centroids()
-            # print(clusters)
-            # print("K:", k, "SSE:", kmeans.calculate_variation(centroids))
             variations.append(kmeans.calculate_variation(clusters))
 
         print(variations)
         plot_elbow(variations)
 
     elif method == 'hierarchical':
-        #test_heriarchy()
+        # test_heriarchy()
+        print(df.head(10))
         heriarchy = HierarchicalGroups(3, np.array(df.values.tolist()))
         clusters = heriarchy.solve()
         for i, cluster in enumerate(clusters):
             print(f"Cluster {i + 1}: {cluster.elements}")
-
 
     exit(0)

@@ -37,7 +37,6 @@ def test_simple_linear_model(df, x_label, test_percentage=0.2):
     print("MSE for simple linear model (" + x_label +"): " + str(mean_squared_error(y_test, y_pred)))
 
 
-# TODO: faltaria hacerlo para cada variable por separado
 def test_multple_linear_model(df, test_percentage=0.2):
     train, test = train_test_split(df, test_size=test_percentage)
     X_train = train.drop("Sales", axis=1)
