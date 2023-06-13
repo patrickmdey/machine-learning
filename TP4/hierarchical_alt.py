@@ -12,13 +12,13 @@ class Group:
     def add_element(self, group):
         # print("Adding", group.id, "to", self.id)
         # print("[" + str(self.elements) + "] + [" + str(group.elements) + "]")
-        self.elements = np.vstack((self.elements, group.elements))
+        self.elements.extend(group.elements)
         self.centroid = np.mean(self.elements, axis=0)
         # print("Result", self.elements)
     
     def calculate_distance_to(self, other_group):
         distance = np.linalg.norm(self.centroid - other_group.centroid)
-        self.distances_to[other_group.id] = np.linalg.norm(self.centroid - other_group.centroid)
+        #self.distances_to[other_group.id] = np.linalg.norm(self.centroid - other_group.centroid)
         return distance
     
     def calculate_avg_centroid(self):
@@ -51,6 +51,8 @@ class HierarchicalGroups:
 
         current_clusters = len(clusters)
         while current_clusters > self.k:
+            if current_clusters % 100 == 0:
+                print(current_clusters)
             min_distance = np.min(distances)
             min_distance_idxs = np.where(distances == min_distance)
             

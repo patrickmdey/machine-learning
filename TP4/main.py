@@ -100,7 +100,7 @@ def run_kohonen(df, params):
 if __name__ == '__main__':
 
     method = 'hierarchical'
-    analysis_cols = ["budget", "popularity", "production_companies", "production_countries",
+    analysis_cols = ["budget", "imdb_id", "popularity", "production_companies", "production_countries",
                    "revenue", "runtime", "spoken_languages", "vote_average", "vote_count"]
 
     # TODO: chequear exactamente que variables vamos a usar para comparar
@@ -117,7 +117,8 @@ if __name__ == '__main__':
 
     # remove rows with null values
     df = df.dropna()
-    df = df.drop_duplicates(subset=analysis_cols, keep=False)
+    df = df.drop_duplicates(subset="imdb_id", keep=False)
+    df = df.drop(["imdb_id"], axis=1)
 
     # # normalize df
     # TODO: esto lo hicimos con un scaler, adaptarlo
@@ -150,7 +151,7 @@ if __name__ == '__main__':
         plot_elbow(variations)
 
     elif method == 'hierarchical':
-        test_heriarchy()
+        #test_heriarchy()
         heriarchy = HierarchicalGroups(3, np.array(df.values.tolist()))
         clusters = heriarchy.solve()
         for i, cluster in enumerate(clusters):
