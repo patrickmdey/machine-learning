@@ -12,14 +12,15 @@ class KohonenNetwork:
             self.genres.append({genre: 0 for genre in genres})
 
     def init_weights(self, patterns):
-        self.weights = np.zeros(shape=(self.grid_k, self.grid_k, len(patterns[0])))
+        # TODO: check
+        self.weights = np.zeros(shape=(self.grid_k, self.grid_k, len(patterns[0]) - 1))
         for i, row in enumerate(self.weights):
             for j, _ in enumerate(row):
                 # TODO: check si esta bien lo de la ultima posicion
                 random_pattern = patterns[np.random.choice(len(patterns))]
                 self.weights[i][j] = np.copy(random_pattern[:-1])
 
-    def find_winner(self, pattern, genre):
+    def find_winner(self, pattern):
         distance = math.inf
         winner = None
 
@@ -49,7 +50,7 @@ class KohonenNetwork:
         self.init_weights(patterns)
 
         # TODO: check si esta bien lo de la ultima posicion. Le puse -1 para no contar el genero aca
-        iter_count = len(patterns[0] - 1) * 500 * 5
+        iter_count = (len(patterns[0]) - 1) * 500 * 5
         final_eta = 0.0001
         final_rad = 1
         dec_eta = (self.eta - final_eta) / iter_count
@@ -60,7 +61,7 @@ class KohonenNetwork:
             # TODO: capaz aca le podriamos sacar la ultima posicion y chau, sacamos el genero por afuera
             pattern = patterns[random_idx]
             genre = pattern[-1]
-            winner = self.find_winner(pattern, genre)
+            winner = self.find_winner(pattern)
             self.update_neighborhood(winner, pattern)
             self.eta -= dec_eta
             self.radius -= dec_rad

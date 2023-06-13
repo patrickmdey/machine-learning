@@ -47,7 +47,6 @@ def plot_heatmap(matrix, title, labels=None):
 
 
 def run_kohonen(df, params, genres):
-    rows = np.array(df.values.tolist())
     headers = df.columns.values.tolist()
     # group_by = df["genres"]
 
@@ -60,13 +59,18 @@ def run_kohonen(df, params, genres):
 
     network = KohonenNetwork(eta=params['eta'], grid_k=grid_k, radius=radius, genres=genres)
 
-    network.solve(rows)
+    network.solve(df.values.tolist(), genres)
 
+
+    # TODO: esto se puede hacer con los genres que quedaron del kohonen
     winners_associated = np.zeros(dtype=int, shape=(grid_k, grid_k))
-    winners = network.find_all_winners(rows)
+    winners = network.find_all_winners(df.values.tolist())
+
+    #plot
     labels = np.empty(dtype="U256", shape=(grid_k, grid_k))
     for idx, (row, col) in enumerate(winners):
         winners_associated[row][col] += 1
+        # labels[row][col] += genres[idx] + "\n"
         # labels[row][col] += group_by[idx] + "\n"
 
     plot_heatmap(winners_associated, "Generos", winners_associated)
@@ -93,10 +97,8 @@ if __name__ == '__main__':
         df["genres"] == "Comedy") | (df["genres"] == "Action")]
     
     genres = df["genres"]
-    print(df.head(10))
     df = df.drop(["genres"], axis=1)
     df["genres"] = genres
-    print(df.head(10))
 
     # remove rows with null values
     df = df.dropna()
@@ -114,14 +116,14 @@ if __name__ == '__main__':
         run_kohonen(df, params, genres)
 
     elif method == 'kmeans':
-        kmeans = Kmeans(3, df.values.tolist())
-        centroids = kmeans.find_centroids()
+        kmeans = Kmeans(3, df.values.tolist(), genres)
+        centroids = kmeans.solve()
         # print(centroids)
 
         variations = []
 
         for k in range(1, 10):
-            kmeans = Kmeans(k, df.values.tolist())
+            kmeans = Kmeans(k, df.values.tolist(), genres)
             centroids, clusters = kmeans.solve()
             variations.append(kmeans.calculate_variation(clusters))
 
@@ -130,8 +132,7 @@ if __name__ == '__main__':
 
     elif method == 'hierarchical':
         # test_heriarchy()
-        print(df.head(10))
-        heriarchy = HierarchicalGroups(3, np.array(df.values.tolist()))
+        heriarchy = HierarchicalGroups(3, df.values.tolist(), genres)
         clusters = heriarchy.solve()
         for i, cluster in enumerate(clusters):
             print(f"Cluster {i + 1}: {cluster.elements}")
