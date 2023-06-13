@@ -1,29 +1,40 @@
 import math
 import numpy as np
 
-
 class KohonenNetwork:
-    def __init__(self, eta, grid_k, radius):
+    def __init__(self, eta, grid_k, radius, genres):
         self.eta = eta
         self.grid_k = grid_k
         self.radius = radius
+
+        self.genres = []
+        for i in range(grid_k * grid_k):
+            self.genres.append({genre: 0 for genre in genres})
 
     def init_weights(self, patterns):
         self.weights = np.zeros(shape=(self.grid_k, self.grid_k, len(patterns[0])))
         for i, row in enumerate(self.weights):
             for j, _ in enumerate(row):
-                self.weights[i][j] = np.copy(patterns[np.random.choice(len(patterns))])
+                # TODO: check si esta bien lo de la ultima posicion
+                random_pattern = patterns[np.random.choice(len(patterns))]
+                self.weights[i][j] = np.copy(random_pattern[:-1])
 
-    def find_winner(self, pattern):
+    def find_winner(self, pattern, genre):
         distance = math.inf
         winner = None
 
         for i, row in enumerate(self.weights):
             for j, w in enumerate(row):
-                new_dist = np.linalg.norm(pattern - w)
+                # TODO: check si esta bien lo de la ultima posicion
+                new_dist = np.linalg.norm(pattern[:-1] - w)
                 if new_dist < distance:
                     winner = (i, j)
                     distance = new_dist
+        #
+        index = winner[0] * self.grid_k + winner[1]
+
+        # TODO: check si esta bien lo de la ultima posicion
+        self.genres[index][pattern[-1]] += 1
 
         return winner
 
@@ -31,20 +42,25 @@ class KohonenNetwork:
         for i, row in enumerate(self.weights):
             for j, w in enumerate(row):
                 if math.sqrt((winner[0] - i) ** 2 + (winner[1] - j) ** 2) < self.radius:
-                    self.weights[i][j] += self.eta * (pattern - self.weights[i][j])
+                    # TODO: check si esta bien lo de la ultima posicion
+                    self.weights[i][j] += self.eta * (pattern[:-1] - self.weights[i][j])
 
-    def solve(self, patterns):
+    def solve(self, patterns, genres):
         self.init_weights(patterns)
 
-        iter_count = len(patterns[0]) * 500 * 5
+        # TODO: check si esta bien lo de la ultima posicion. Le puse -1 para no contar el genero aca
+        iter_count = len(patterns[0] - 1) * 500 * 5
         final_eta = 0.0001
         final_rad = 1
         dec_eta = (self.eta - final_eta) / iter_count
         dec_rad = (self.radius - final_rad) / iter_count
         
         for _ in range(iter_count):
-            pattern = patterns[np.random.choice(len(patterns))]
-            winner = self.find_winner(pattern)
+            random_idx = np.random.choice(len(patterns))
+            # TODO: capaz aca le podriamos sacar la ultima posicion y chau, sacamos el genero por afuera
+            pattern = patterns[random_idx]
+            genre = pattern[-1]
+            winner = self.find_winner(pattern, genre)
             self.update_neighborhood(winner, pattern)
             self.eta -= dec_eta
             self.radius -= dec_rad
@@ -66,6 +82,24 @@ class KohonenNetwork:
                 avg_weights[i][j] /= dir_count
                 
         return avg_weights
+
+    def predict_genre(self, pattern):
+        distance = math.inf
+        winner = None
+
+        for i, row in enumerate(self.weights):
+            for j, w in enumerate(row):
+                new_dist = np.linalg.norm(pattern - w)
+                if new_dist < distance:
+                    winner = (i, j)
+                    distance = new_dist
+        #
+        index = winner[0] * self.grid_k + winner[1]
+
+        
+        max_genre = max(self.genres[index], key=self.genres[index].get)
+
+        return winner, max_genre
 
     def find_all_winners(self, patterns):
         winners = []

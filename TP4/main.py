@@ -6,7 +6,6 @@ import sys
 from matplotlib import pyplot as plt
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from hierarchical_alt import HierarchicalGroups
-from utils import boxplot_column
 from kohonen_network import KohonenNetwork
 from kmeans import Kmeans
 
@@ -47,35 +46,7 @@ def plot_heatmap(matrix, title, labels=None):
     plt.show()
 
 
-def dataset_analysis(df, useful_cols):
-    print("Amount of duplicated rows:", df.duplicated().sum())
-    print("Amount of null values:", df.isnull().sum().sum())
-    print("Amount of rows:", df.shape[0])
-    print("Amount of columns:", df.shape[1])
-    # print("Duplicated rows:")
-    # print(df[df.duplicated()]["imdb_id"])
-
-    for col in useful_cols:
-        boxplot_column(df, col)
-
-    # remove rows with null values
-    df = df.dropna()
-    df = df.drop_duplicates(subset=useful_cols, keep=False)
-
-    years = df["release_date"].str.split("-", n=2, expand=True)[0]
-    df["release_date"] = years
-
-    trimed_df = df[useful_cols]
-
-    # df.drop(["genres", "imdb_id", "original_title", "overview", "production_companies"], axis=1)
-    # print(df["original_title"].head())
-
-    # get standard deviation per column
-    # TODO: ver std
-    print(df.std)
-
-
-def run_kohonen(df, params):
+def run_kohonen(df, params, genres):
     rows = np.array(df.values.tolist())
     headers = df.columns.values.tolist()
     # group_by = df["genres"]
@@ -87,7 +58,7 @@ def run_kohonen(df, params):
     grid_k = params['init_k']
     radius = params['init_r']
 
-    network = KohonenNetwork(eta=params['eta'], grid_k=grid_k, radius=radius)
+    network = KohonenNetwork(eta=params['eta'], grid_k=grid_k, radius=radius, genres=genres)
 
     network.solve(rows)
 
@@ -104,24 +75,28 @@ def run_kohonen(df, params):
 
 
 if __name__ == '__main__':
-    
+
     method = 'kmeans'
     if len(sys.argv) > 1:
-        method = sys.argv[1] # kohonen, kmeans, hierarchical
+        method = sys.argv[1]  # kohonen, kmeans, hierarchical, analysis
 
     analysis_cols = ["budget", "genres", "imdb_id", "popularity", "production_companies", "production_countries",
                      "revenue", "runtime", "spoken_languages", "vote_average", "vote_count"]
+    # dataset_analysis(pd.read_csv("movie_data.csv", sep=';'), analysis_cols)
 
     float_analysis_cols = ["budget", "popularity", "production_companies", "production_countries",
                            "revenue", "runtime", "spoken_languages", "vote_average", "vote_count"]
-
-    # dataset_analysis(pd.read_csv("movie_data.csv", sep=';'), analysis_cols)
 
     df = pd.read_csv('movie_data.csv', sep=';', usecols=analysis_cols)
 
     df = df.loc[(df["genres"] == "Drama") | (
         df["genres"] == "Comedy") | (df["genres"] == "Action")]
+    
+    genres = df["genres"]
+    print(df.head(10))
     df = df.drop(["genres"], axis=1)
+    df["genres"] = genres
+    print(df.head(10))
 
     # remove rows with null values
     df = df.dropna()
@@ -136,7 +111,7 @@ if __name__ == '__main__':
             'init_k': 7,
             'init_r': 5
         }
-        run_kohonen(df, params)
+        run_kohonen(df, params, genres)
 
     elif method == 'kmeans':
         kmeans = Kmeans(3, df.values.tolist())
@@ -147,7 +122,7 @@ if __name__ == '__main__':
 
         for k in range(1, 10):
             kmeans = Kmeans(k, df.values.tolist())
-            centroids, clusters = kmeans.find_centroids()
+            centroids, clusters = kmeans.solve()
             variations.append(kmeans.calculate_variation(clusters))
 
         print(variations)

@@ -4,6 +4,7 @@ class Group:
     id = 0
     def __init__(self, element, use_centroid=True):
         self.elements = [element]
+        self.genres = {}
         self.distances_to = {}
         self.id = Group.id
         Group.id += 1
