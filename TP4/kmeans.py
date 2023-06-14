@@ -81,10 +81,13 @@ class Kmeans:
 
     def predict_genre(self, observation, centroids):
         cluster_idx = -1
+        min_dist = math.inf
         for idx, centroid in enumerate(centroids):
             # print("Observation: " + str(observation), "Centroid: " + str(centroid))
             centroid = np.array(centroid)
             # TODO: check si esta bien lo de la ultima posicion
+
+            #print(observation[:-1], centroid)
             dist = np.linalg.norm(observation[:-1] - centroid)
 
             if dist < min_dist:

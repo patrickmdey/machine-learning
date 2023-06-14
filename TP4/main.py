@@ -11,10 +11,12 @@ from kmeans import Kmeans
 
 # TODO: agregarle a los clusters cuantas peliculas de cada tipo tienen!!!!
 
-def run_single_kmeans(df, cluster_amount, genres):
+def run_single_kmeans(train, test, cluster_amount, genres, confusion_matrix):
     print("Running single kmeans with " + str(cluster_amount) + " clusters")
-    kmeans = Kmeans(cluster_amount, df.values.tolist(), genres)
-    centroids = kmeans.solve()
+    kmeans = Kmeans(cluster_amount, train.values.tolist(), genres)
+    centroids, clusters = kmeans.solve()
+    
+    
     tot = 0
     for i, cluster in enumerate(kmeans.get_amount_of_genres_per_cluster()):
         total = sum(cluster.values())
@@ -23,6 +25,14 @@ def run_single_kmeans(df, cluster_amount, genres):
         print(f"{i}[{total}]: {result}")
         tot += sum(cluster.values())
     print(tot)
+
+    correct = 0
+    for idx, instance in test.iterrows():
+        genre = kmeans.predict_genre(instance, centroids)
+        confusion_matrix[instance[-1]][genre] += 1
+        correct += 1 if genre == instance[-1] else 0
+    
+    return correct
 
 
 def test_heriarchy():
@@ -55,7 +65,7 @@ def plot_heatmap(matrix, title, k, r, labels=None):
     p = sns.heatmap(df, annot=labels, fmt='')
     p.set_title(title)
 
-    save_path = "./out/kohonen/" + str(k) + "_" + str(r)+ "/"
+    save_path = "./out/kohonen/" + str(k) + "_" + str(r) + "/"
     if not os.path.exists(save_path):
         os.makedirs(save_path)
     plt.savefig(save_path+title+".png")
@@ -75,23 +85,28 @@ def run_kohonen(train, test, params, genres, confusion_matrix):
     network.solve(train.values.tolist(), genres)
 
     winners_associated = np.zeros(dtype=int, shape=(grid_k, grid_k))
-    winners = network.find_all_winners(df.values.tolist())
+    winners = network.find_all_winners(train.values.tolist())
+    #print("ammount: "+ str(len(winners)))
 
     correct = 0
 
     for idx, instance in test.iterrows():
         winner, genre = network.predict_genre(instance)
-        # print("Real: " + instance[-1] + " Predicted: " + genre)
         confusion_matrix[instance[-1]][genre] += 1
-        # df_to_csv.append([genre, instance[-1]])
         correct += 1 if genre == instance[-1] else 0
     
 
     labels = np.empty(dtype="U256", shape=(grid_k, grid_k))
-    for idx, (row, col) in enumerate(winners):
+    i = 0
+    for (row, col) in winners:
+        #print(i)
+        i+=1
         winners_associated[row][col] += 1
         # labels[row][col] += genres[idx] + "\n"
         # labels[row][col] += group_by[idx] + "\n"
+    
+    #print(np.array(winners_associated).sum())
+    #print(winners_associated[0][0])
 
     plot_heatmap(winners_associated, "Activaciones de red Kohonen k=" +
                  str(grid_k), grid_k, radius, winners_associated)
@@ -134,13 +149,14 @@ if __name__ == '__main__':
     if len(sys.argv) > 1:
         method = sys.argv[1]  # kohonen, kmeans, hierarchical, analysis
 
-    #analysis_cols = ["budget", "genres", "imdb_id", "popularity", "production_companies", "production_countries",
-    #                "revenue", "runtime", "spoken_languages", "vote_average", "vote_count"]
     analysis_cols = ["budget", "genres", "imdb_id", "revenue", "vote_count"]
 
     float_analysis_cols = ["budget", "revenue", "vote_count"]
-    #float_analysis_cols = ["budget", "popularity", "production_companies", "production_countries",
-    #                      "revenue", "runtime", "spoken_languages", "vote_average", "vote_count"]
+    
+    # analysis_cols = ["budget", "genres", "imdb_id", "popularity", "production_companies", "production_countries",
+    #                 "revenue", "runtime", "spoken_languages", "vote_average", "vote_count"]
+    # float_analysis_cols = ["budget", "popularity", "production_companies", "production_countries",
+    #                       "revenue", "runtime", "spoken_languages", "vote_average", "vote_count"]
 
     df = pd.read_csv('movie_data.csv', sep=';', usecols=analysis_cols)
 
@@ -179,19 +195,19 @@ if __name__ == '__main__':
             correct += run_kohonen(train, test, params, genres, confusion_matrix)
 
         elif method == 'kmeans':
-            run_single_kmeans(df, 3, genres)
+            correct += run_single_kmeans(train, test, 4, genres, confusion_matrix)
 
-            variations = []
+            # variations = []
 
-            for k in range(1, 10):
-                kmeans = Kmeans(k, df.values.tolist(), genres)
-                centroids, clusters = kmeans.solve()
-                variations.append(kmeans.calculate_variation(clusters))
+            # for k in range(1, 10):
+            #     kmeans = Kmeans(k, df.values.tolist(), genres)
+            #     centroids, clusters = kmeans.solve()
+            #     variations.append(kmeans.calculate_variation(clusters))
 
-            print(variations)
-            plot_elbow(variations)
+            # print(variations)
+            # plot_elbow(variations)
 
-            run_single_kmeans(df, 4, genres)
+            #run_single_kmeans(df, 4, genres)
 
         elif method == 'hierarchical':
             # test_heriarchy()
