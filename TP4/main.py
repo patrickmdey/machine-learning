@@ -175,62 +175,65 @@ if __name__ == '__main__':
 
     partitions = partition_dataset(df, 0.2)
 
-    confusion_matrix = {real_cat: {pred_cat: 0 for pred_cat in genres} for real_cat in genres}
+    #confusion_matrix = {real_cat: {pred_cat: 0 for pred_cat in genres} for real_cat in genres}
     # print(confusion_matrix)
-    correct = 0
+    #correct = 0
 
-    for partition in partitions:
-        test = partition
-        train = pd.concat([df for df in partitions if df is not partition])
+    #for partition in partitions:
+        #test = partition
+        #train = pd.concat([df for df in partitions if df is not partition])
 
-        train.reset_index(drop=True, inplace=True)
-        test.reset_index(drop=True, inplace=True)
+        #train.reset_index(drop=True, inplace=True)
+        #test.reset_index(drop=True, inplace=True)
 
-        if method == 'kohonen':
-            params = {
-                'eta': 0.1,
-                'init_k': 6,
-                'init_r': 6
-            }
-            correct += run_kohonen(train, test, params, genres, confusion_matrix)
+    if method == 'kohonen':
+        print(len(df))
+        params = {
+            'eta': 0.1,
+            'init_k': 6,
+            'init_r': 6
+        }
+        # correct += run_kohonen(train, test, params, genres, confusion_matrix)
 
-        elif method == 'kmeans':
-            correct += run_single_kmeans(train, test, 4, genres, confusion_matrix)
+    elif method == 'kmeans':
+        # correct += run_single_kmeans(train, test, 4, genres, confusion_matrix)
 
-            # variations = []
+        print(len(df))
+        variations = []
 
-            # for k in range(1, 10):
-            #     kmeans = Kmeans(k, df.values.tolist(), genres)
-            #     centroids, clusters = kmeans.solve()
-            #     variations.append(kmeans.calculate_variation(clusters))
+        for k in range(1, 10):
+            kmeans = Kmeans(k, df.values.tolist(), genres)
+            centroids, clusters = kmeans.solve()
+            variations.append(kmeans.calculate_variation(clusters))
 
-            # print(variations)
-            # plot_elbow(variations)
+        print(variations)
+        plot_elbow(variations)
 
-            #run_single_kmeans(df, 4, genres)
+        #run_single_kmeans(df, 4, genres)
 
-        elif method == 'hierarchical':
-            # test_heriarchy()
-            heriarchy = HierarchicalGroups(3, df.values.tolist(), genres)
-            genre_count = {genre: 0 for genre in genres}
-            clusters = heriarchy.solve()
-            genre_count_per_cluster = {}
-            for i, cluster in enumerate(clusters):
-                genre_count_per_cluster[i] = {genre: 0 for genre in genres}
-                for obs in cluster.elements:
-                    genre_count[obs[-1]] += 1
-                    genre_count_per_cluster[i][obs[-1]] += 1
+    elif method == 'hierarchical':
+        # test_heriarchy()
+        print(len(df))
+        heriarchy = HierarchicalGroups(3, df.values.tolist(), genres)
+        genre_count = {genre: 0 for genre in genres}
+        clusters = heriarchy.solve()
+        genre_count_per_cluster = {}
+        for i, cluster in enumerate(clusters):
+            genre_count_per_cluster[i] = {genre: 0 for genre in genres}
+            for obs in cluster.elements:
+                genre_count[obs[-1]] += 1
+                genre_count_per_cluster[i][obs[-1]] += 1
 
-            print(genre_count)
-            print(genre_count_per_cluster)
+        print(genre_count)
+        print(genre_count_per_cluster)
     
-    precision = correct / len(df)
-    print("Precision: " + str(precision))
+    #precision = correct / len(df)
+    #print("Precision: " + str(precision))
 
 
     #plot confusion matrix
-    plt.clf()
-    sns.heatmap(pd.DataFrame(confusion_matrix), annot=True, fmt='g')
-    plt.title('Matriz de confusión - ' + method)
-    out_path = "out/"+method+"_confusion_matrix.png"
-    plt.savefig(out_path)
+    # plt.clf()
+    # sns.heatmap(pd.DataFrame(confusion_matrix), annot=True, fmt='g')
+    # plt.title('Matriz de confusión - ' + method)
+    # out_path = "out/"+method+"_confusion_matrix.png"
+    # plt.savefig(out_path)

@@ -75,8 +75,8 @@ class HierarchicalGroups:
 
         current_clusters = len(clusters)
         while current_clusters > self.k:
-            if current_clusters % 100 == 0:
-                print(current_clusters)
+            # if current_clusters % 100 == 0:
+            #     print(current_clusters)
             min_distance = np.min(distances)
             min_distance_idxs = np.where(distances == min_distance)
 
