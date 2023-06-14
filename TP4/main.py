@@ -84,10 +84,33 @@ def run_kohonen(df, params, genres):
         # labels[row][col] += genres[idx] + "\n"
         # labels[row][col] += group_by[idx] + "\n"
 
-    plot_heatmap(winners_associated, "Generos", winners_associated)
+    plot_heatmap(winners_associated, "Activaciones de red Kohonen k=" + str(grid_k), winners_associated)
     plot_heatmap(winners_associated, "Agrupación de Generos", labels)
     plot_heatmap(network.u_matrix(), "Matriz U")
 
+def partition_dataset(df, partition_percentage):
+    # shuffle dataframe rows
+    df = df.sample(frac=1).reset_index(drop=True)
+
+    partition_size = int(np.floor(len(df) * partition_percentage))
+    partitions = []
+
+    bottom = 0
+    up = partition_size
+    while bottom < len(df):
+
+        partitions.append(df[bottom:up].copy())
+        bottom += partition_size
+        up += partition_size
+        if up > len(df):
+            up = len(df)
+
+    if (up - bottom) != partition_size:
+        partitions[-2] = pd.concat([partitions[-2], partitions[-1]], ignore_index=True)
+
+        partitions = partitions[:-1]
+
+    return partitions
 
 if __name__ == '__main__':
 
@@ -95,12 +118,13 @@ if __name__ == '__main__':
     if len(sys.argv) > 1:
         method = sys.argv[1]  # kohonen, kmeans, hierarchical, analysis
 
-    analysis_cols = ["budget", "genres", "imdb_id", "popularity", "production_companies", "production_countries",
-                     "revenue", "runtime", "spoken_languages", "vote_average", "vote_count"]
-    # dataset_analysis(pd.read_csv("movie_data.csv", sep=';'), analysis_cols)
+    #analysis_cols = ["budget", "genres", "imdb_id", "popularity", "production_companies", "production_countries",
+    #                 "revenue", "runtime", "spoken_languages", "vote_average", "vote_count"]
+    analysis_cols = ["budget", "genres", "imdb_id", "revenue", "vote_count"]
 
-    float_analysis_cols = ["budget", "popularity", "production_companies", "production_countries",
-                           "revenue", "runtime", "spoken_languages", "vote_average", "vote_count"]
+    float_analysis_cols = ["budget", "revenue", "vote_count"]
+    #float_analysis_cols = ["budget", "popularity", "production_companies", "production_countries",
+    #                       "revenue", "runtime", "spoken_languages", "vote_average", "vote_count"]
 
     df = pd.read_csv('movie_data.csv', sep=';', usecols=analysis_cols)
 
@@ -111,32 +135,34 @@ if __name__ == '__main__':
     df = df.drop(["genres"], axis=1)
     df["genres"] = genres
 
-    # remove rows with null values
     df = df.dropna()
     df = df.drop_duplicates(subset="imdb_id", keep=False)
     df = df.drop(["imdb_id"], axis=1)
 
     df.loc[:, float_analysis_cols] = StandardScaler().fit_transform(df[float_analysis_cols].values)
 
+
+
+    #partitions = partition_dataset(df, 0.2)
+
+    #for partition in partitions:
+        #test = partition
+        #train = pd.concat([df for df in partitions if df is not partition])
+
+        #train.reset_index(drop=True, inplace=True)
+        #test.reset_index(drop=True, inplace=True)
+
+        #df_to_csv = pd.DataFrame(columns=["predicted", "real"])
+
     if method == 'kohonen':
         params = {
             'eta': 0.1,
-            'init_k': 7,
-            'init_r': 5
+            'init_k':4,
+            'init_r': 4
         }
         run_kohonen(df, params, genres)
 
     elif method == 'kmeans':
-        # kmeans = Kmeans(3, df.values.tolist(), genres)
-        # centroids = kmeans.solve()
-        # tot = 0
-        # for i, cluster in enumerate(kmeans.get_amount_of_genres_per_cluster()):
-        #     total = sum(cluster.values())
-        #     result = {key: str(value*100 / total) + '%' for key, value in cluster.items()}
-        #     print(f"{i}[{total}]: {result}")
-        #     tot+= sum(cluster.values())
-        # print(tot)
-
         run_single_kmeans(df, 3, genres)
 
         variations = []
@@ -166,4 +192,3 @@ if __name__ == '__main__':
         print(genre_count)
         print(genre_count_per_cluster)
 
-    exit(0)
