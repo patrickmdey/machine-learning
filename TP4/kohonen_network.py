@@ -90,7 +90,7 @@ class KohonenNetwork:
 
         for i, row in enumerate(self.weights):
             for j, w in enumerate(row):
-                new_dist = np.linalg.norm(pattern - w)
+                new_dist = np.linalg.norm(pattern[:-1] - w)
                 if new_dist < distance:
                     winner = (i, j)
                     distance = new_dist

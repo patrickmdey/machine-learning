@@ -9,7 +9,6 @@ from hierarchical_alt import HierarchicalGroups
 from kohonen_network import KohonenNetwork
 from kmeans import Kmeans
 
-
 # TODO: agregarle a los clusters cuantas peliculas de cada tipo tienen!!!!
 
 def run_single_kmeans(df, cluster_amount, genres):
@@ -19,10 +18,12 @@ def run_single_kmeans(df, cluster_amount, genres):
     tot = 0
     for i, cluster in enumerate(kmeans.get_amount_of_genres_per_cluster()):
         total = sum(cluster.values())
-        result = {key: str(value*100 / total) + '%' for key, value in cluster.items()}
+        result = {key: str(value*100 / total) + '%' for key,
+                  value in cluster.items()}
         print(f"{i}[{total}]: {result}")
-        tot+= sum(cluster.values())
+        tot += sum(cluster.values())
     print(tot)
+
 
 def test_heriarchy():
     data = np.array([[0.4, 0.53], [0.22, 0.38], [0.35, 0.32],
@@ -45,7 +46,7 @@ def plot_elbow(variations):
     plt.savefig("./out/kmeans/elbow.png")
 
 
-def plot_heatmap(matrix, title, labels=None):
+def plot_heatmap(matrix, title, k, r, labels=None):
     plt.clf()
     # Create a dataset
     df = pd.DataFrame(matrix)
@@ -54,39 +55,52 @@ def plot_heatmap(matrix, title, labels=None):
     p = sns.heatmap(df, annot=labels, fmt='')
     p.set_title(title)
 
-    plt.show()
+    save_path = "./out/kohonen/" + str(k) + "_" + str(r)+ "/"
+    if not os.path.exists(save_path):
+        os.makedirs(save_path)
+    plt.savefig(save_path+title+".png")
+
+    # plt.show()
 
 
-def run_kohonen(df, params, genres):
-    headers = df.columns.values.tolist()
-    # group_by = df["genres"]
-
-    # rows = rows.astype(float)
-
-    # rows = StandardScaler().fit_transform(rows) #http://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.StandardScaler.html
+def run_kohonen(train, test, params, genres, confusion_matrix):
+    headers = train.columns.values.tolist()
 
     grid_k = params['init_k']
     radius = params['init_r']
 
-    network = KohonenNetwork(eta=params['eta'], grid_k=grid_k, radius=radius, genres=genres)
+    network = KohonenNetwork(
+        eta=params['eta'], grid_k=grid_k, radius=radius, genres=genres)
 
-    network.solve(df.values.tolist(), genres)
+    network.solve(train.values.tolist(), genres)
 
-
-    # TODO: esto se puede hacer con los genres que quedaron del kohonen
     winners_associated = np.zeros(dtype=int, shape=(grid_k, grid_k))
     winners = network.find_all_winners(df.values.tolist())
 
-    #plot
+    correct = 0
+
+    for idx, instance in test.iterrows():
+        winner, genre = network.predict_genre(instance)
+        # print("Real: " + instance[-1] + " Predicted: " + genre)
+        confusion_matrix[instance[-1]][genre] += 1
+        # df_to_csv.append([genre, instance[-1]])
+        correct += 1 if genre == instance[-1] else 0
+    
+
     labels = np.empty(dtype="U256", shape=(grid_k, grid_k))
     for idx, (row, col) in enumerate(winners):
         winners_associated[row][col] += 1
         # labels[row][col] += genres[idx] + "\n"
         # labels[row][col] += group_by[idx] + "\n"
 
-    plot_heatmap(winners_associated, "Activaciones de red Kohonen k=" + str(grid_k), winners_associated)
-    plot_heatmap(winners_associated, "Agrupación de Generos", labels)
-    plot_heatmap(network.u_matrix(), "Matriz U")
+    plot_heatmap(winners_associated, "Activaciones de red Kohonen k=" +
+                 str(grid_k), grid_k, radius, winners_associated)
+    plot_heatmap(winners_associated, "Agrupación de Generos",
+                 grid_k, radius, labels)
+    plot_heatmap(network.u_matrix(), "Matriz U k="+str(grid_k), grid_k, radius)
+
+    return correct
+
 
 def partition_dataset(df, partition_percentage):
     # shuffle dataframe rows
@@ -106,11 +120,13 @@ def partition_dataset(df, partition_percentage):
             up = len(df)
 
     if (up - bottom) != partition_size:
-        partitions[-2] = pd.concat([partitions[-2], partitions[-1]], ignore_index=True)
+        partitions[-2] = pd.concat([partitions[-2],
+                                   partitions[-1]], ignore_index=True)
 
         partitions = partitions[:-1]
 
     return partitions
+
 
 if __name__ == '__main__':
 
@@ -119,18 +135,18 @@ if __name__ == '__main__':
         method = sys.argv[1]  # kohonen, kmeans, hierarchical, analysis
 
     #analysis_cols = ["budget", "genres", "imdb_id", "popularity", "production_companies", "production_countries",
-    #                 "revenue", "runtime", "spoken_languages", "vote_average", "vote_count"]
+    #                "revenue", "runtime", "spoken_languages", "vote_average", "vote_count"]
     analysis_cols = ["budget", "genres", "imdb_id", "revenue", "vote_count"]
 
     float_analysis_cols = ["budget", "revenue", "vote_count"]
     #float_analysis_cols = ["budget", "popularity", "production_companies", "production_countries",
-    #                       "revenue", "runtime", "spoken_languages", "vote_average", "vote_count"]
+    #                      "revenue", "runtime", "spoken_languages", "vote_average", "vote_count"]
 
     df = pd.read_csv('movie_data.csv', sep=';', usecols=analysis_cols)
 
     df = df.loc[(df["genres"] == "Drama") | (
         df["genres"] == "Comedy") | (df["genres"] == "Action")]
-    
+
     genres = df["genres"]
     df = df.drop(["genres"], axis=1)
     df["genres"] = genres
@@ -141,54 +157,64 @@ if __name__ == '__main__':
 
     df.loc[:, float_analysis_cols] = StandardScaler().fit_transform(df[float_analysis_cols].values)
 
+    partitions = partition_dataset(df, 0.2)
+
+    confusion_matrix = {real_cat: {pred_cat: 0 for pred_cat in genres} for real_cat in genres}
+    # print(confusion_matrix)
+    correct = 0
+
+    for partition in partitions:
+        test = partition
+        train = pd.concat([df for df in partitions if df is not partition])
+
+        train.reset_index(drop=True, inplace=True)
+        test.reset_index(drop=True, inplace=True)
+
+        if method == 'kohonen':
+            params = {
+                'eta': 0.1,
+                'init_k': 6,
+                'init_r': 6
+            }
+            correct += run_kohonen(train, test, params, genres, confusion_matrix)
+
+        elif method == 'kmeans':
+            run_single_kmeans(df, 3, genres)
+
+            variations = []
+
+            for k in range(1, 10):
+                kmeans = Kmeans(k, df.values.tolist(), genres)
+                centroids, clusters = kmeans.solve()
+                variations.append(kmeans.calculate_variation(clusters))
+
+            print(variations)
+            plot_elbow(variations)
+
+            run_single_kmeans(df, 4, genres)
+
+        elif method == 'hierarchical':
+            # test_heriarchy()
+            heriarchy = HierarchicalGroups(3, df.values.tolist(), genres)
+            genre_count = {genre: 0 for genre in genres}
+            clusters = heriarchy.solve()
+            genre_count_per_cluster = {}
+            for i, cluster in enumerate(clusters):
+                genre_count_per_cluster[i] = {genre: 0 for genre in genres}
+                for obs in cluster.elements:
+                    genre_count[obs[-1]] += 1
+                    genre_count_per_cluster[i][obs[-1]] += 1
+
+            print(genre_count)
+            print(genre_count_per_cluster)
+    
+    precision = correct / len(df)
+    print("Precision: " + str(precision))
 
 
-    #partitions = partition_dataset(df, 0.2)
-
-    #for partition in partitions:
-        #test = partition
-        #train = pd.concat([df for df in partitions if df is not partition])
-
-        #train.reset_index(drop=True, inplace=True)
-        #test.reset_index(drop=True, inplace=True)
-
-        #df_to_csv = pd.DataFrame(columns=["predicted", "real"])
-
-    if method == 'kohonen':
-        params = {
-            'eta': 0.1,
-            'init_k':4,
-            'init_r': 4
-        }
-        run_kohonen(df, params, genres)
-
-    elif method == 'kmeans':
-        run_single_kmeans(df, 3, genres)
-
-        variations = []
-
-        for k in range(1, 10):
-            kmeans = Kmeans(k, df.values.tolist(), genres)
-            centroids, clusters = kmeans.solve()
-            variations.append(kmeans.calculate_variation(clusters))
-
-        print(variations)
-        plot_elbow(variations)
-
-        run_single_kmeans(df, 4, genres)
-
-    elif method == 'hierarchical':
-        # test_heriarchy()
-        heriarchy = HierarchicalGroups(3, df.values.tolist(), genres)
-        genre_count = {genre: 0 for genre in genres}
-        clusters = heriarchy.solve()
-        genre_count_per_cluster = {}
-        for i, cluster in enumerate(clusters):
-            genre_count_per_cluster[i] = {genre: 0 for genre in genres}
-            for obs in cluster.elements:
-                genre_count[obs[-1]] += 1
-                genre_count_per_cluster[i][obs[-1]] += 1
-
-        print(genre_count)
-        print(genre_count_per_cluster)
-
+    #plot confusion matrix
+    plt.clf()
+    sns.heatmap(pd.DataFrame(confusion_matrix), annot=True, fmt='g')
+    plt.title('Matriz de confusión - ' + method)
+    out_path = "out/"+method+"_confusion_matrix.png"
+    plt.savefig(out_path)
