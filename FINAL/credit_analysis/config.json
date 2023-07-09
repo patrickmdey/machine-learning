@@ -1,0 +1,6 @@
+{"target": "Creditability",
+                    "file": "./german_credit.csv",
+                    "test_percentage": 0.3,
+                    "n_estimators": 70,
+                    "learing_rate": 1.5
+                    }
