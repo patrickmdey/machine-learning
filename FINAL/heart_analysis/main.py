@@ -1,12 +1,12 @@
 import pandas as pd
 import numpy as np
 import seaborn as sns
-import json, os, warnings
+import os, json, warnings
 from matplotlib import pyplot as plt
 from sklearn.ensemble import AdaBoostClassifier
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import confusion_matrix
-
+from sklearn.metrics import confusion_matrix, accuracy_score, precision_score
+from utils import prepare_dataset
 
 def get_config_values():
     with open("config.json") as config_file:
@@ -20,39 +20,9 @@ def get_config_values():
     return n_estimators, learning_rate, test_size, partitions
 
 
-def categorize_columns(df, columns):
-    for column_name in columns:
-        quartiles = df[column_name].quantile([0.25, 0.5, 0.75, 1])
-        df[column_name] = pd.qcut(df[column_name], 4, labels=[0, 1, 2, 3])
-    return df
-
-
-def prepare_dataset(df):
-    # Adaboost doesnt support categorical data so it needs to be converted to numerical
-    mappings = {
-        "Fbs": {">120": 1, "<=120": 0},
-        "Sex": {"F": 0, "M": 1},
-        "ChestPain": {"typical": 0, "asymptomatic": 1, "nonanginal": 2, "nontypical": 3},
-        "RestECG": {"normal": 0, "abnormal": 1},
-        "ExAng": {"No": 0, "Yes": 1},
-        "Slope": {"down": 0, "level": 1, "up": 2},
-        "Thal": {"normal": 0, "fixed": 1, "reversable": 2},
-        "HDisease": {"No": 0, "Yes": 1}
-    }
-
-    for column, mapping in mappings.items():
-        heart_df[column] = heart_df[column].map(mapping)
-
-    # TODO
-    # , "Oldpeak"] Oldpeak is not working
-    columns = ["Age", "RestBP", "Chol", "MaxHR"]
-    df = categorize_columns(df, columns)
-    return df
-
-
 def plot_heatmap(df, partition_amount, n_estimators, learning_rate):
-
-    warnings.filterwarnings("ignore", category=UserWarning, message="FixedFormatter should only be used together with FixedLocator")
+    warnings.filterwarnings("ignore", category=UserWarning,
+                            message="FixedFormatter should only be used together with FixedLocator")
     # Silence the warning
     plt.clf()
     cmap = sns.color_palette("light:b", as_cmap=True, n_colors=5)
@@ -105,8 +75,11 @@ if __name__ == "__main__":
     path = "simulation_out/"
     create_sim_out_dir(path)
 
-    train_scores = []
-    test_scores = []
+    train_precs = []
+    test_precs = []
+
+    train_accuracies = []
+    test_accuracies = []
     for i in range(0, partitions):
         train, test = train_test_split(heart_df, test_size=0.2)
 
@@ -118,12 +91,20 @@ if __name__ == "__main__":
         model = AdaBoostClassifier(
             n_estimators=n_estimators, learning_rate=learning_rate)
         model.fit(train_x, train_y)
-        train_scores.append(model.score(train_x, train_y))
-        test_scores.append(model.score(test_x, test_y))
 
-    to_append = {"estimators": n_estimators, "mean_train_score": np.mean(train_scores), "std_train_score": np.std(
-        train_scores), "mean_test_score": np.mean(test_scores), "std_test_score": np.std(test_scores),
-        "max_test_score": np.max(test_scores), "max_train_score": np.max(train_scores)
+        train_predictions = model.predict(train_x)
+        test_predictions = model.predict(test_x)
+
+        train_precs.append(precision_score(train_y, train_predictions))
+        test_precs.append(precision_score(test_y, test_predictions))
+
+        train_accuracies.append(accuracy_score(train_y, train_predictions))
+        test_accuracies.append(accuracy_score(test_y, test_predictions))
+
+    to_append = {"estimators": n_estimators, "mean_train_prec": np.mean(train_precs), "std_train_prec": np.std(
+        train_precs), "mean_test_prec": np.mean(test_precs), "std_test_prec": np.std(test_precs), "mean_train_acc": np.mean(train_accuracies),
+        "mean_test_acc": np.mean(test_accuracies), "std_train_acc": np.std(train_accuracies), "std_test_acc": np.std(test_accuracies),
+        "max_test_prec": np.max(test_precs), "max_train_prec": np.max(train_precs)
     }
 
     precisions_path = "simulation_out/" + str(partitions) + "/" + \
@@ -132,9 +113,10 @@ if __name__ == "__main__":
     if not os.path.exists(precisions_path):
         pd.DataFrame([to_append]).to_csv(precisions_path)
     else:
-        metric_df = pd.read_csv(precisions_path, usecols=["estimators", "mean_train_score", "std_train_score",
-                                "mean_test_score", "std_test_score", "max_train_score", "max_test_score"])
-        pd.concat([metric_df, pd.DataFrame([to_append])]).to_csv(precisions_path)
+        metric_df = pd.read_csv(precisions_path, usecols=["estimators", "mean_train_prec", "std_train_prec",
+                                "mean_test_prec", "std_test_prec", "mean_train_acc", "mean_test_acc", "std_train_acc", "std_test_acc", "max_test_prec", "max_train_prec"])
+        pd.concat([metric_df, pd.DataFrame([to_append])]
+                  ).to_csv(precisions_path)
 
     confusion_matrix = confusion_matrix(test_y, model.predict(test_x))
 

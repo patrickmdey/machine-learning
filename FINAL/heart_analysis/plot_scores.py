@@ -6,8 +6,8 @@ import sys, os
 def get_precision_graph(df, partition_amount, learning_rate=None):
     plt.clf()
 
-    plt.plot(df["estimators"], df["mean_test_score"], label="test")
-    plt.plot(df["estimators"], df["mean_train_score"], label="train")
+    plt.plot(df["estimators"], df["mean_test_prec"], label="test")
+    plt.plot(df["estimators"], df["mean_train_prec"], label="train")
     plt.xlabel("Cantidad de estimadores")
     plt.ylabel("Precisión")
     plt.legend(loc="upper right")
