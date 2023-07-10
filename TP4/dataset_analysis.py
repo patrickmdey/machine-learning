@@ -36,5 +36,9 @@ if __name__ == '__main__':
     df = pd.read_csv('movie_data.csv', sep=';')
     df = df.loc[(df["genres"] == "Drama") | (
         df["genres"] == "Comedy") | (df["genres"] == "Action")]
+    
+    print("Drama",len(df.loc[df["genres"] == "Drama"])*100/len(df), "%")
+    print("Comedia",len(df.loc[df["genres"] == "Comedy"])*100/len(df), "%")
+    print("Acción", len(df.loc[df["genres"] == "Action"])*100/len(df), "%")
 
     dataset_analysis(df)

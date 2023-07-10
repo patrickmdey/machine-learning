@@ -3,6 +3,7 @@ import numpy as np
 import seaborn as sns
 import os
 import sys
+import math
 from matplotlib import pyplot as plt
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from hierarchical_alt import HierarchicalGroups
@@ -46,7 +47,10 @@ def test_heriarchy():
 
 def plot_elbow(variations):
     plt.clf()
-    plt.plot(variations, marker='o')
+    x = np.arange(1, len(variations)+1)
+    y = np.array(variations)
+    plt.plot(x, y, marker='o')
+    # plt.plot(variations, marker='o')
     plt.xlabel("Cantidad de clusters")
     plt.ylabel("Variación total")
     plt.title("Método del codo")
@@ -202,9 +206,15 @@ if __name__ == '__main__':
         variations = []
 
         for k in range(1, 10):
-            kmeans = Kmeans(k, df.values.tolist(), genres)
-            centroids, clusters = kmeans.solve()
-            variations.append(kmeans.calculate_variation(clusters))
+            min_var = math.inf
+            for _ in range(5):
+                kmeans = Kmeans(k, df.values.tolist(), genres)
+                centroids, clusters = kmeans.solve()
+                variation = kmeans.calculate_variation(clusters)
+                if variation < min_var:
+                    min_var = variation
+            variations.append(min_var)   
+            #variations.append(kmeans.calculate_variation(clusters))
 
         print(variations)
         plot_elbow(variations)
