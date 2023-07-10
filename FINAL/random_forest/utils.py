@@ -1,8 +1,34 @@
 from matplotlib import pyplot as plt
+import numpy as np
 import pandas as pd
 import seaborn as sns
-import json
 import os
+
+
+def partition_dataset(df, partition_percentage):
+    # shuffle dataframe rows
+    df = df.sample(frac=1).reset_index(drop=True)
+
+    partition_size = int(np.floor(len(df) * partition_percentage))
+    partitions = []
+
+    bottom = 0
+    up = partition_size
+    while bottom < len(df):
+
+        partitions.append(df[bottom:up].copy())
+        bottom += partition_size
+        up += partition_size
+        if up > len(df):
+            up = len(df)
+
+    if (up - bottom) != partition_size:
+        partitions[-2] = pd.concat([partitions[-2],
+                                   partitions[-1]], ignore_index=True)
+
+        partitions = partitions[:-1]
+
+    return partitions
 
 
 def categorize_columns(df, columns):
@@ -20,6 +46,7 @@ def categorize_columns(df, columns):
             quantile_dict["q3"].append(quartiles[0.75])
             quantile_dict["q4"].append(quartiles[1])
 
+    os.mkdir("./dataset_out/") if not os.path.exists("./dataset_out/") else None
     pd.DataFrame(quantile_dict).to_csv("./dataset_out/quantiles.csv",
                                        index=False) if len(quantile_dict["column"]) > 0 else None
 
@@ -42,9 +69,7 @@ def prepare_dataset(df):
     for column, mapping in mappings.items():
         df[column] = df[column].map(mapping)
 
-    # TODO
-    # , "Oldpeak"] Oldpeak is not working
-    columns = ["Age", "RestBP", "Chol", "MaxHR"]
+    columns = ["Age", "RestBP", "Chol", "MaxHR", "Oldpeak"]
     df = categorize_columns(df, columns)
     return df
 
@@ -91,6 +116,15 @@ def kurtosis_column(df, column):
 
 def skewness_column(df, column):
     print("Skewness:", df[column].skew())
+
+
+def plot_pie(df, col):
+    plt.clf()
+    plt.pie(df[col].value_counts(),
+            labels=df[col].value_counts().index.tolist(), autopct='%1.1f%%')
+    plt.title(col)
+    plt.tight_layout()
+    plt.savefig("dataset_out/pie_"+col+".png")
 
 
 def boxplot_column(df, column_name, method=""):

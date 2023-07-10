@@ -21,11 +21,15 @@ def dataset_analysis(df):
 
     for col in useful_cols:
         boxplot_column(df, col)
+    
+    plot_pie(df, "HDisease")
+
+    
 
 
 if __name__ == '__main__':
 
-    df = pd.read_csv('heart.csv', sep=',')
+    df = pd.read_csv('../heart.csv', sep=',')
 
     # df = prepare_dataset(df)
 

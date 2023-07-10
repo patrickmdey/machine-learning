@@ -3,8 +3,9 @@ import numpy as np
 import seaborn as sns
 import os, json, warnings
 from matplotlib import pyplot as plt
-from sklearn.ensemble import AdaBoostClassifier
-from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+# from sklearn.model_selection import train_test_split
+from sklearn.model_selection import StratifiedKFold
 from sklearn.metrics import confusion_matrix, accuracy_score, precision_score
 from utils import prepare_dataset
 
@@ -12,15 +13,14 @@ def get_config_values():
     with open("config.json") as config_file:
         config = json.load(config_file)
         n_estimators = config["n_estimators"] if "n_estimators" in config else 50
-        learning_rate = config["learning_rate"] if "learning_rate" in config else 1
         test_size = config["test_size"] if "test_size" in config else 0.2
 
         partitions = config["partitions"] if "partitions" in config else 10
 
-    return n_estimators, learning_rate, test_size, partitions
+    return n_estimators, test_size, partitions
 
 
-def plot_heatmap(df, partition_amount, n_estimators, learning_rate):
+def plot_heatmap(df, partition_amount, n_estimators):
     warnings.filterwarnings("ignore", category=UserWarning,
                             message="FixedFormatter should only be used together with FixedLocator")
     # Silence the warning
@@ -37,15 +37,14 @@ def plot_heatmap(df, partition_amount, n_estimators, learning_rate):
         tick_label.set_text(f"{int(tick_values[i] * 100)}%")
     cbar.ax.set_yticklabels(tick_labels)
 
-    title = "Matriz de confusión con " + str(partition_amount) + " particiones, " + str(n_estimators) + \
-        " estimadores y " + str(learning_rate) + " de learning rate"
+    title = "Matriz de confusión con " + str(partition_amount) + " particiones y " + str(n_estimators) + \
+        " estimadores"
 
     ax.set_title(title, fontsize=7, pad=10)
     plt.tight_layout()
 
     path = "simulation_out/" + str(partition_amount) + "/" + \
-        str(n_estimators) + "_estimators/" + \
-        str(learning_rate) + "_learning_rate/"
+        str(n_estimators) + "_estimators/"
 
     plt.savefig(path + "confusion_matrix.png")
 
@@ -61,16 +60,14 @@ def create_sim_out_dir(init_path):
     os.mkdir(init_path) if not os.path.exists(init_path) else None
     init_path += str(n_estimators) + "_estimators/"
     os.mkdir(init_path) if not os.path.exists(init_path) else None
-    init_path += str(learning_rate) + "_learning_rate/"
-    os.mkdir(init_path) if not os.path.exists(init_path) else None
 
 
 if __name__ == "__main__":
 
-    heart_df = pd.read_csv("heart.csv")
+    heart_df = pd.read_csv("../heart.csv")
     heart_df = prepare_dataset(heart_df)
 
-    n_estimators, learning_rate, test_size, partitions = get_config_values()
+    n_estimators, test_size, partitions = get_config_values()
 
     path = "simulation_out/"
     create_sim_out_dir(path)
@@ -80,17 +77,24 @@ if __name__ == "__main__":
 
     train_accuracies = []
     test_accuracies = []
-    for i in range(0, partitions):
-        train, test = train_test_split(heart_df, test_size=0.2)
+    # train, test = train_test_split(heart_df, test_size=0.2)
 
-        train_y = train["HDisease"]
-        train_x = train.drop("HDisease", axis=1)
-        test_y = test["HDisease"]
-        test_x = test.drop("HDisease", axis=1)
+    skf = StratifiedKFold(n_splits=partitions, shuffle=True)
 
-        model = AdaBoostClassifier(
-            n_estimators=n_estimators, learning_rate=learning_rate)
-        model.fit(train_x, train_y)
+    X = heart_df.drop("HDisease", axis=1)
+    y = heart_df["HDisease"]
+
+
+    for i, (train_index, test_index) in enumerate(skf.split(X, y)):
+
+        train_y = y.iloc[train_index]
+        train_x = X.iloc[train_index]
+        test_y = y.iloc[test_index]
+        test_x = X.iloc[test_index]
+
+        model = RandomForestClassifier(
+            n_estimators=n_estimators)
+        model.fit(train_x, train_y) 
 
         train_predictions = model.predict(train_x)
         test_predictions = model.predict(test_x)
@@ -108,7 +112,7 @@ if __name__ == "__main__":
     }
 
     precisions_path = "simulation_out/" + str(partitions) + "/" + \
-        "precisions_" + str(learning_rate) + ".csv"
+        "precisions.csv"
 
     if not os.path.exists(precisions_path):
         pd.DataFrame([to_append]).to_csv(precisions_path)
@@ -118,6 +122,7 @@ if __name__ == "__main__":
         pd.concat([metric_df, pd.DataFrame([to_append])]
                   ).to_csv(precisions_path)
 
+    # TODO: Correrlo por separado con la mejor particion
     confusion_matrix = confusion_matrix(test_y, model.predict(test_x))
 
     # for better visualization
@@ -130,4 +135,4 @@ if __name__ == "__main__":
                          false_positives, true_positives]})
 
     cm_df = cm_df.apply(confusion_row_to_percent, axis=1)
-    plot_heatmap(cm_df, partitions, n_estimators, learning_rate)
+    plot_heatmap(cm_df, partitions, n_estimators)
