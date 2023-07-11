@@ -3,8 +3,8 @@
 test_pc=(0.1 0.2 0.3)
 partitions=(9 4 3)
 
-n_estimators=(25 50 100 150)
-learning_rate=(0.1 0.5 0.7 1.0)
+n_estimators=(50 100 150)
+learning_rate=(0.1 0.5 0.7)
 
 echo "Simulating all configurations..."
 for i in $(seq 0 $((${#partitions[@]} - 1))); do

@@ -72,8 +72,8 @@ def prepare_dataset(df):
     for column, mapping in mappings.items():
         df[column] = df[column].map(mapping)
 
-    columns = ["Age", "RestBP", "Chol", "MaxHR", "Oldpeak"]
-    df = categorize_columns(df, columns)
+    # columns = ["Age", "RestBP", "Chol", "MaxHR", "Oldpeak"]
+    # df = categorize_columns(df, columns)
     return df
 
 

@@ -84,7 +84,6 @@ if __name__ == "__main__":
 
     train_accuracies = []
     test_accuracies = []
-    # train, test = train_test_split(heart_df, test_size=0.2)
 
     skf = StratifiedKFold(n_splits=partitions, shuffle=True)
 
@@ -92,7 +91,7 @@ if __name__ == "__main__":
     y = heart_df["HDisease"]
 
     confusion_matrixes = []
-
+    
     for i, (train_index, test_index) in enumerate(skf.split(X, y)):
 
         train_y = y.iloc[train_index]
@@ -134,14 +133,14 @@ if __name__ == "__main__":
 
 
     best_configuration = {"partitions": partitions, "estimators": n_estimators,
-                          "learning_rate": learning_rate, "mean_train_prec": np.mean(train_precs), "std_train_prec": np.std(train_precs), "max_train_prec": np.max(train_precs)}
+                          "learning_rate": learning_rate, "mean_test_prec": np.mean(test_precs), "std_test_prec": np.std(test_precs), "max_test_prec": np.max(test_precs)}
 
     best_configuration_path = "simulation_out/best_config.csv"
     if not os.path.exists(best_configuration_path):
         pd.DataFrame([best_configuration]).to_csv(best_configuration_path)
     else:
         best_partition_df = pd.read_csv(best_configuration_path, usecols=[
-                                        "partitions", "estimators", "learning_rate", "mean_train_prec", "std_train_prec", "max_train_prec"])
+                                        "partitions", "estimators", "learning_rate", "mean_test_prec", "std_test_prec", "max_test_prec"])
         pd.concat([best_partition_df, pd.DataFrame([best_configuration])]).to_csv(
             best_configuration_path)
         
