@@ -91,6 +91,8 @@ if __name__ == "__main__":
     X = heart_df.drop("HDisease", axis=1)
     y = heart_df["HDisease"]
 
+    confusion_matrixes = []
+
     for i, (train_index, test_index) in enumerate(skf.split(X, y)):
 
         train_y = y.iloc[train_index]
@@ -111,6 +113,8 @@ if __name__ == "__main__":
         train_accuracies.append(accuracy_score(train_y, train_predictions))
         test_accuracies.append(accuracy_score(test_y, test_predictions))
 
+        confusion_matrixes.append(confusion_matrix(test_y, test_predictions))
+
     append_scores = {"estimators": n_estimators, "mean_train_prec": np.mean(train_precs), "std_train_prec": np.std(
         train_precs), "mean_test_prec": np.mean(test_precs), "std_test_prec": np.std(test_precs), "mean_train_acc": np.mean(train_accuracies),
         "mean_test_acc": np.mean(test_accuracies), "std_train_acc": np.std(train_accuracies), "std_test_acc": np.std(test_accuracies),
@@ -128,11 +132,11 @@ if __name__ == "__main__":
         pd.concat([metric_df, pd.DataFrame([append_scores])]
                   ).to_csv(precisions_path)
 
-    best_configuration_path = "simulation_out/best_config.csv"
 
     best_configuration = {"partitions": partitions, "estimators": n_estimators,
                           "learning_rate": learning_rate, "mean_train_prec": np.mean(train_precs), "std_train_prec": np.std(train_precs), "max_train_prec": np.max(train_precs)}
 
+    best_configuration_path = "simulation_out/best_config.csv"
     if not os.path.exists(best_configuration_path):
         pd.DataFrame([best_configuration]).to_csv(best_configuration_path)
     else:
@@ -140,11 +144,9 @@ if __name__ == "__main__":
                                         "partitions", "estimators", "learning_rate", "mean_train_prec", "std_train_prec", "max_train_prec"])
         pd.concat([best_partition_df, pd.DataFrame([best_configuration])]).to_csv(
             best_configuration_path)
+        
+    confusion_matrix = np.sum(confusion_matrixes, axis=0)
 
-    # TODO: Correrlo por separado con la mejor particion
-    confusion_matrix = confusion_matrix(test_y, model.predict(test_x))
-
-    # for better visualization
     true_negatives = confusion_matrix[0][0]
     false_positives = confusion_matrix[0][1]
     false_negatives = confusion_matrix[1][0]

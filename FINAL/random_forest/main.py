@@ -84,6 +84,7 @@ if __name__ == "__main__":
     X = heart_df.drop("HDisease", axis=1)
     y = heart_df["HDisease"]
 
+    confusion_matrixes = []
 
     for i, (train_index, test_index) in enumerate(skf.split(X, y)):
 
@@ -105,6 +106,8 @@ if __name__ == "__main__":
         train_accuracies.append(accuracy_score(train_y, train_predictions))
         test_accuracies.append(accuracy_score(test_y, test_predictions))
 
+        confusion_matrixes.append(confusion_matrix(test_y, test_predictions))
+
     to_append = {"estimators": n_estimators, "mean_train_prec": np.mean(train_precs), "std_train_prec": np.std(
         train_precs), "mean_test_prec": np.mean(test_precs), "std_test_prec": np.std(test_precs), "mean_train_acc": np.mean(train_accuracies),
         "mean_test_acc": np.mean(test_accuracies), "std_train_acc": np.std(train_accuracies), "std_test_acc": np.std(test_accuracies),
@@ -122,8 +125,7 @@ if __name__ == "__main__":
         pd.concat([metric_df, pd.DataFrame([to_append])]
                   ).to_csv(precisions_path)
 
-    # TODO: Correrlo por separado con la mejor particion
-    confusion_matrix = confusion_matrix(test_y, model.predict(test_x))
+    confusion_matrix = np.sum(confusion_matrixes, axis=0)
 
     # for better visualization
     true_negatives = confusion_matrix[0][0]
