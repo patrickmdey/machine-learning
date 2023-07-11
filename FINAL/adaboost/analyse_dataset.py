@@ -23,6 +23,8 @@ def dataset_analysis(df):
         boxplot_column(df, col)
     
     plot_pie(df, "HDisease")
+    plot_pie(df, "Sex")
+    plot_pie(df, "HDisease")
 
     
 

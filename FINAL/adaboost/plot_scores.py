@@ -16,7 +16,8 @@ def get_precision_graph(df, partition_amount, learning_rate=None):
         "precision_vs_estimator_amount_" + str(learning_rate) + ".png"
     plt.savefig(out_path)
 
-def get_optimal_confusion_matrix()
+def get_optimal_confusion_matrix():
+    return
 
 if __name__ == "__main__":
 

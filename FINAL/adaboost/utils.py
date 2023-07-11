@@ -38,7 +38,6 @@ def categorize_columns(df, columns):
     for column_name in columns:
         quartiles = df[column_name].quantile([0.25, 0.5, 0.75, 1])
 
-        print(quartiles)
         if column_name == "Oldpeak":
             df[column_name] = pd.qcut(df[column_name], 3, labels=[0, 1, 2])
         else:
@@ -128,7 +127,7 @@ def plot_pie(df, col):
             labels=df[col].value_counts().index.tolist(), autopct='%1.1f%%')
     plt.title(col)
     plt.tight_layout()
-    plt.savefig("dataset_out/pie_"+col+".png")
+    plt.savefig("dataset_out/"+col+"_pie.png")
 
 
 def boxplot_column(df, column_name, method=""):
@@ -138,6 +137,7 @@ def boxplot_column(df, column_name, method=""):
     boxplot.yaxis.grid(True, linestyle='-', which='major',
                        color='lightgrey', alpha=0.5)
     file_name = column_name + "_with_" + method if method != "" else column_name
+    boxplot.figure.tight_layout()
     boxplot.figure.savefig("./dataset_out/" + file_name + "_boxplot.png")
 
 

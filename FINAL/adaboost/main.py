@@ -1,13 +1,16 @@
 import pandas as pd
 import numpy as np
 import seaborn as sns
-import os, json, warnings
+import os
+import json
+import warnings
 from matplotlib import pyplot as plt
 from sklearn.ensemble import AdaBoostClassifier
 # from sklearn.model_selection import train_test_split
 from sklearn.model_selection import StratifiedKFold
 from sklearn.metrics import confusion_matrix, accuracy_score, precision_score
 from utils import prepare_dataset
+
 
 def get_config_values():
     with open("config.json") as config_file:
@@ -88,7 +91,6 @@ if __name__ == "__main__":
     X = heart_df.drop("HDisease", axis=1)
     y = heart_df["HDisease"]
 
-
     for i, (train_index, test_index) in enumerate(skf.split(X, y)):
 
         train_y = y.iloc[train_index]
@@ -109,7 +111,7 @@ if __name__ == "__main__":
         train_accuracies.append(accuracy_score(train_y, train_predictions))
         test_accuracies.append(accuracy_score(test_y, test_predictions))
 
-    to_append = {"estimators": n_estimators, "mean_train_prec": np.mean(train_precs), "std_train_prec": np.std(
+    append_scores = {"estimators": n_estimators, "mean_train_prec": np.mean(train_precs), "std_train_prec": np.std(
         train_precs), "mean_test_prec": np.mean(test_precs), "std_test_prec": np.std(test_precs), "mean_train_acc": np.mean(train_accuracies),
         "mean_test_acc": np.mean(test_accuracies), "std_train_acc": np.std(train_accuracies), "std_test_acc": np.std(test_accuracies),
         "max_test_prec": np.max(test_precs), "max_train_prec": np.max(train_precs)
@@ -119,12 +121,25 @@ if __name__ == "__main__":
         "precisions_" + str(learning_rate) + ".csv"
 
     if not os.path.exists(precisions_path):
-        pd.DataFrame([to_append]).to_csv(precisions_path)
+        pd.DataFrame([append_scores]).to_csv(precisions_path)
     else:
         metric_df = pd.read_csv(precisions_path, usecols=["estimators", "mean_train_prec", "std_train_prec",
                                 "mean_test_prec", "std_test_prec", "mean_train_acc", "mean_test_acc", "std_train_acc", "std_test_acc", "max_test_prec", "max_train_prec"])
-        pd.concat([metric_df, pd.DataFrame([to_append])]
+        pd.concat([metric_df, pd.DataFrame([append_scores])]
                   ).to_csv(precisions_path)
+
+    best_configuration_path = "simulation_out/best_config.csv"
+
+    best_configuration = {"partitions": partitions, "estimators": n_estimators,
+                          "learning_rate": learning_rate, "mean_train_prec": np.mean(train_precs), "std_train_prec": np.std(train_precs), "max_train_prec": np.max(train_precs)}
+
+    if not os.path.exists(best_configuration_path):
+        pd.DataFrame([best_configuration]).to_csv(best_configuration_path)
+    else:
+        best_partition_df = pd.read_csv(best_configuration_path, usecols=[
+                                        "partitions", "estimators", "learning_rate", "mean_train_prec", "std_train_prec", "max_train_prec"])
+        pd.concat([best_partition_df, pd.DataFrame([best_configuration])]).to_csv(
+            best_configuration_path)
 
     # TODO: Correrlo por separado con la mejor particion
     confusion_matrix = confusion_matrix(test_y, model.predict(test_x))
