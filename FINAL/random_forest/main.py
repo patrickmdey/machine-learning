@@ -1,22 +1,22 @@
 import pandas as pd
 import numpy as np
 import seaborn as sns
-import os, json, warnings
+import os
+import json
+import warnings
 from matplotlib import pyplot as plt
 from sklearn.ensemble import RandomForestClassifier
-# from sklearn.model_selection import train_test_split
 from sklearn.model_selection import StratifiedKFold
 from sklearn.metrics import confusion_matrix, accuracy_score, precision_score
 from utils import prepare_dataset
 
+
 def get_config_values():
     with open("config.json") as config_file:
         config = json.load(config_file)
-        n_estimators = config["n_estimators"] if "n_estimators" in config else 50
-        test_size = config["test_size"] if "test_size" in config else 0.2
-
+        n_estimators = config["tree_amount"] if "tree_amount" in config else 50
+        test_size = config["test_percentage"] if "test_percentage" in config else 0.2
         partitions = config["partitions"] if "partitions" in config else 10
-
     return n_estimators, test_size, partitions
 
 
@@ -95,7 +95,7 @@ if __name__ == "__main__":
 
         model = RandomForestClassifier(
             n_estimators=n_estimators)
-        model.fit(train_x, train_y) 
+        model.fit(train_x, train_y)
 
         train_predictions = model.predict(train_x)
         test_predictions = model.predict(test_x)
@@ -124,6 +124,18 @@ if __name__ == "__main__":
                                 "mean_test_prec", "std_test_prec", "mean_train_acc", "mean_test_acc", "std_train_acc", "std_test_acc", "max_test_prec", "max_train_prec"])
         pd.concat([metric_df, pd.DataFrame([to_append])]
                   ).to_csv(precisions_path)
+
+    best_configuration = {"partitions": partitions, "estimators": n_estimators,
+                          "mean_test_prec": np.mean(test_precs), "std_test_prec": np.std(test_precs), "max_test_prec": np.max(test_precs)}
+
+    best_configuration_path = "simulation_out/best_config.csv"
+    if not os.path.exists(best_configuration_path):
+        pd.DataFrame([best_configuration]).to_csv(best_configuration_path)
+    else:
+        best_partition_df = pd.read_csv(best_configuration_path, usecols=[
+                                        "partitions", "estimators", "mean_test_prec", "std_test_prec", "max_test_prec"])
+        pd.concat([best_partition_df, pd.DataFrame([best_configuration])]).to_csv(
+            best_configuration_path)
 
     confusion_matrix = np.sum(confusion_matrixes, axis=0)
 

@@ -5,30 +5,25 @@ import seaborn as sns
 import os
 
 
-def partition_dataset(df, partition_percentage):
-    # shuffle dataframe rows
-    df = df.sample(frac=1).reset_index(drop=True)
+def prepare_dataset(df):
+    # Adaboost doesnt support categorical data so it needs to be converted to numerical
+    mappings = {
+        "Fbs": {"<=120": 0, ">120": 1},
+        "Sex": {"F": 0, "M": 1},
+        "ChestPain": {"typical": 0, "asymptomatic": 1, "nonanginal": 2, "nontypical": 3},
+        "RestECG": {"normal": 0, "abnormal": 1},
+        "ExAng": {"No": 0, "Yes": 1},
+        "Slope": {"down": 0, "level": 1, "up": 2},
+        "Thal": {"normal": 0, "fixed": 1, "reversable": 2},
+        "HDisease": {"No": 0, "Yes": 1}
+    }
 
-    partition_size = int(np.floor(len(df) * partition_percentage))
-    partitions = []
+    for column, mapping in mappings.items():
+        df[column] = df[column].map(mapping)
 
-    bottom = 0
-    up = partition_size
-    while bottom < len(df):
-
-        partitions.append(df[bottom:up].copy())
-        bottom += partition_size
-        up += partition_size
-        if up > len(df):
-            up = len(df)
-
-    if (up - bottom) != partition_size:
-        partitions[-2] = pd.concat([partitions[-2],
-                                   partitions[-1]], ignore_index=True)
-
-        partitions = partitions[:-1]
-
-    return partitions
+    # columns = ["Age", "RestBP", "Chol", "MaxHR", "Oldpeak"]
+    # df = categorize_columns(df, columns)
+    return df
 
 
 def categorize_columns(df, columns):
@@ -53,24 +48,28 @@ def categorize_columns(df, columns):
     return df
 
 
-def prepare_dataset(df):
-    # Adaboost doesnt support categorical data so it needs to be converted to numerical
-    mappings = {
-        "Fbs": {">120": 1, "<=120": 0},
-        "Sex": {"F": 0, "M": 1},
-        "ChestPain": {"typical": 0, "asymptomatic": 1, "nonanginal": 2, "nontypical": 3},
-        "RestECG": {"normal": 0, "abnormal": 1},
-        "ExAng": {"No": 0, "Yes": 1},
-        "Slope": {"down": 0, "level": 1, "up": 2},
-        "Thal": {"normal": 0, "fixed": 1, "reversable": 2},
-        "HDisease": {"No": 0, "Yes": 1}
-    }
+def categorize_columns(df, columns):
 
-    for column, mapping in mappings.items():
-        df[column] = df[column].map(mapping)
+    quantile_dict = {"column": [], "q1": [], "q2": [], "q3": [], "q4": []}
 
-    columns = ["Age", "RestBP", "Chol", "MaxHR", "Oldpeak"]
-    df = categorize_columns(df, columns)
+    for column_name in columns:
+        quartiles = df[column_name].quantile([0.25, 0.5, 0.75, 1])
+
+        if column_name == "Oldpeak":
+            df[column_name] = pd.qcut(df[column_name], 3, labels=[0, 1, 2])
+        else:
+            df[column_name] = pd.qcut(df[column_name], 4, labels=[0, 1, 2, 3])
+
+        if not os.path.exists("./dataset_out/quantiles.csv"):
+            quantile_dict["column"].append(column_name)
+            quantile_dict["q1"].append(quartiles[0.25])
+            quantile_dict["q2"].append(quartiles[0.5])
+            quantile_dict["q3"].append(quartiles[0.75])
+            quantile_dict["q4"].append(quartiles[1])
+
+    pd.DataFrame(quantile_dict).to_csv("./dataset_out/quantiles.csv",
+                                       index=False) if len(quantile_dict["column"]) > 0 else None
+
     return df
 
 
