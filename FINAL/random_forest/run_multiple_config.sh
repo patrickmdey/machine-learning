@@ -1,7 +1,7 @@
 #!/bin/bash
 
 test_pc=(0.1 0.2 0.3)
-partitions=(9 4 3)
+partitions=(10 5 3)
 
 tree_amount=(5 10 15)
 

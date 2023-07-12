@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 
 if __name__ == "__main__":
 
@@ -9,5 +10,3 @@ if __name__ == "__main__":
     best_config_df = pd.DataFrame(df.iloc[max_config_idx]).transpose()
     best_config_df = best_config_df.drop("Unnamed: 0", axis=1)
     print(best_config_df)
-    
-

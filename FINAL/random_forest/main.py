@@ -20,7 +20,7 @@ def get_config_values():
     return n_estimators, test_size, partitions
 
 
-def plot_heatmap(df, partition_amount, n_estimators):
+def plot_heatmap(df, partition_amount, n_estimators, prec):
     warnings.filterwarnings("ignore", category=UserWarning,
                             message="FixedFormatter should only be used together with FixedLocator")
     # Silence the warning
@@ -38,7 +38,7 @@ def plot_heatmap(df, partition_amount, n_estimators):
     cbar.ax.set_yticklabels(tick_labels)
 
     title = "Matriz de confusión con " + str(partition_amount) + " particiones y " + str(n_estimators) + \
-        " estimadores"
+        " estimadores" #+ "\nPrecisión: " + str(prec)
 
     ax.set_title(title, fontsize=7, pad=10)
     plt.tight_layout()
@@ -147,6 +147,6 @@ if __name__ == "__main__":
 
     cm_df = pd.DataFrame({"0": [true_negatives, false_negatives], "1": [
                          false_positives, true_positives]})
-
+    
     cm_df = cm_df.apply(confusion_row_to_percent, axis=1)
-    plot_heatmap(cm_df, partitions, n_estimators)
+    plot_heatmap(cm_df, partitions, n_estimators, np.mean(test_precs))

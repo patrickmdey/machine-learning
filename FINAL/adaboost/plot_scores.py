@@ -10,7 +10,7 @@ def get_precision_graph(df, partition_amount, learning_rate=None):
     plt.xlabel("Cantidad de estimadores")
     plt.ylabel("Precisión")
     plt.legend(loc="upper right")
-    plt.title("Precisión vs Cantidad de estimadores")
+    plt.title("Precisión vs Cantidad de estimadores - " + str(partition_amount) + " particiones y " + str(learning_rate) + " de learning rate")
 
     out_path = "simulation_out/" + str(partition_amount) + "/" + \
         "precision_vs_estimator_amount_" + str(learning_rate) + ".png"

@@ -10,7 +10,7 @@ def get_precision_graph(df, partition_amount):
     plt.xlabel("Cantidad de estimadores")
     plt.ylabel("Precisión")
     plt.legend(loc="upper right")
-    plt.title("Precisión vs Cantidad de estimadores")
+    plt.title("Precisión vs Cantidad de árboles - " + str(partition_amount) + " particiones")
 
     out_path = "simulation_out/" + str(partition_amount) + "/" + \
         "precision_vs_estimator_amount.png"
